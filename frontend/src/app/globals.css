@@ -1,2 +1,6 @@
 @import "tailwindcss";
 @source "node_modules/preline/dist";
+/* globals.css */
+.custom-heading {
+    font-family: var(--font-vina-sans);
+  }
