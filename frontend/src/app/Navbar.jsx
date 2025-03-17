@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Contact, Gavel, Home, Info, Menu, X } from 'lucide-react';
+import Link from 'next/link';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,31 +21,37 @@ const Navbar = () => {
             <div className="flex items-center">
              <h1 className="text-green-700 font-extrabold  text-2xl  ">REVIVO</h1>
             </div>
+      
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-gray-700 hover:text-emerald-600 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
+              <Link href="/" className="text-gray-700 hover:text-emerald-600 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
                 Home
-              </a>
-              <a href="#" className="text-gray-700 hover:text-emerald-600 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
+              </Link>
+              <Link href="/about" className="text-gray-700 hover:text-emerald-600 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
                 About Us
-              </a>
+              </Link>
               <a href="#" className="text-gray-700 hover:text-emerald-600 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
                 Bidding
               </a>
-              <a href="#" className="text-gray-700 hover:text-emerald-600 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
+              <Link href="/contact" className="text-gray-700 hover:text-emerald-600 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
                 Contact
-              </a>
+              </Link>
             </div>
 
             {/* Desktop Buttons */}
             <div className="hidden md:flex items-center space-x-4">
+              <Link href="/login">
               <button className="px-4 py-2 rounded-3xl text-emerald-600 border border-emerald-600 hover:bg-emerald-50 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
                 Log In
               </button>
+              </Link>
+              
+            <Link href="/signup">
               <button className="px-4 py-2 rounded-2xl bg-emerald-600 text-white  hover:bg-emerald-700 cursor-pointer whitespace-nowrap transition-all duration-300 hover:scale-105">
                 Sign Up
               </button>
+            </Link>
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -73,29 +80,31 @@ const Navbar = () => {
             className="fixed inset-0 bg-white z-40 md:hidden pt-16"
           >
             <div className="flex flex-col space-y-4 p-4">
-              <a href="#" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
+              <Link href="/" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
                 <Home/>
                 <span>Home</span>
-              </a>
-              <a href="#" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
+              </Link>
+              <Link href="/about" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
                 <Info/>
                 <span>About Us</span>
-              </a>
-              <a href="#" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
+              </Link>
+              <Link href="#" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
                 <Gavel/>
                 <span>Bidding</span>
-              </a>
+              </Link>
              
-              <a href="#" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
+              <Link href="/contact" className="text-gray-700 hover:text-emerald-600 py-2 cursor-pointer flex items-center space-x-2">
                <Contact/>
                 <span>Contact</span>
-              </a>
-              <button className="w-full py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 cursor-pointer transition-all duration-300 hover:scale-105">
+              </Link>
+              <Link href='/login'><button className="w-full py-2 text-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-50 cursor-pointer transition-all duration-300 hover:scale-105">
                 Log In
-              </button>
+              </button></Link>
+              <Link href="/signup">
               <button className="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer transition-all duration-300 hover:scale-105">
                 Sign Up
               </button>
+              </Link>
             </div>
           </motion.div>
         )}

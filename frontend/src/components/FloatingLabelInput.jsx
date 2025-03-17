@@ -21,7 +21,7 @@ const FloatingLabelInput = ({ id, label, type = "text", value, onChange }) => {
         className="absolute left-4 top-1/2 -translate-y-1/2 text-black font-bold pointer-events-none bg-white"
         initial={{ y: "-50%", scale: 1 }}
         animate={{
-          y: isFocused || value ? "-120%" : "-50%",
+          y: isFocused || value ? "-110%" : "-10%",
           scale: isFocused || value ? 0.9 : 1,
         }}
         transition={{ duration: 0.2, ease: "easeOut" }}
