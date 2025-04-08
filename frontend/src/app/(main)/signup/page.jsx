@@ -10,6 +10,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import FloatingLabelInput from "@/components/FloatingLabelInput";
+import Backbar from '@/components/Backbar';
 
 const Sign = () => {
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ const Sign = () => {
   };
 
   return (
+    
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}

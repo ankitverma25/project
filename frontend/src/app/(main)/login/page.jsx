@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import FloatingLabelInput from "@/components/FloatingLabelInput";
+import Backbar from "@/components/Backbar";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,10 +16,11 @@ const Login = () => {
     // Handle login logic here
   };
 
-  return (
+  return (<>
+      <Backbar />
     <div className="min-h-screen relative overflow-hidden flex flex-col items-center px-4">
       {/* Background Image */}
-      <div className="absolute inset-0 -z-20">
+      <div className="absolute inset-0 -z-20 ">
         <motion.img
           src="./junkcar.jpg"
           alt="Background Car"
@@ -36,12 +38,12 @@ const Login = () => {
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-      >
+        >
         <img
-          src="https://public.readdy.ai/ai/img_res/a8db5267f340d83cdd33e4eba4e0fb25.jpg"
+          src="logo.jpg"
           alt="Revivo Logo"
-          className="w-24 h-24 object-contain drop-shadow-xl"
-        />
+          className="w-24 h-24 bg-white rounded-full object-contain drop-shadow-xl"
+          />
       </motion.div>
 
       {/* Main Content */}
@@ -50,7 +52,7 @@ const Login = () => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8, delay: 0.4 }}
-      >
+        >
         <h1 className="text-4xl font-bold text-center mb-3">
           Welcome Back to Revivo!
         </h1>
@@ -63,7 +65,7 @@ const Login = () => {
         <form
           onSubmit={handleSubmit}
           className="bg-white/80 backdrop-blur-md p-8 rounded-xl shadow-lg mb-8 border border-white/40 hover:border-blue-200/40 duration-300"
-        >
+          >
           <div className="space-y-6">
             {/* Email Input */}
             <motion.div
@@ -79,7 +81,7 @@ const Login = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-              />
+                />
             </motion.div>
 
             {/* Password Input */}
@@ -88,7 +90,7 @@ const Login = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-            >
+              >
               <FloatingLabelInput
                 id="password"
                 label="Password"
@@ -97,13 +99,13 @@ const Login = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-              />
+                />
               <button
                 type="button"
                 aria-label="Toggle password visibility"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
                 onClick={() => setShowPassword(!showPassword)}
-              >
+                >
                 <i className={`fa ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
               </button>
             </motion.div>
@@ -115,7 +117,7 @@ const Login = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.2 }}
-            >
+              >
               <i className="fa fa-lock mr-2"></i> Secure Login
             </motion.button>
           </div>
@@ -127,7 +129,7 @@ const Login = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.4 }}
-        >
+          >
           <p className="text-gray-600">
             New here?{" "}
             <a
@@ -152,7 +154,7 @@ const Login = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1.6 }}
-      >
+        >
         <i className="fa fa-headset mr-2"></i>
         Need help? Contact Support
       </motion.div>
@@ -163,7 +165,7 @@ const Login = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1.8 }}
-      >
+        >
         <p>© 2025 Revivo. All rights reserved.</p>
         <div className="flex justify-center space-x-4 mt-4">
           <a href="#" className="hover:text-blue-600">
@@ -178,6 +180,7 @@ const Login = () => {
         </div>
       </motion.footer>
     </div>
+        </>
   );
 };
 

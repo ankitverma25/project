@@ -19,7 +19,8 @@ const Navbar = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-             <h1 className="text-green-700 font-extrabold  text-2xl  ">REVIVO</h1>
+            <h1 className="text-green-700 font-extrabold  text-2xl ">REVIVO </h1>
+    
             </div>
       
 
