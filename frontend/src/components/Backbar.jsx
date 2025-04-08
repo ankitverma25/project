@@ -13,7 +13,7 @@ const Backbar = () => {
             onClick={() => router.back()} 
             className="text-gray-700 hover:text-emerald-600 cursor-pointer transition-all duration-300 hover:scale-105"
           >
-            ⬅ Back
+          <i className="fa-solid fa-arrow-left"></i>
           </button>
           
           {/* Logo */}
