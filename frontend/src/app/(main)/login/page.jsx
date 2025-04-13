@@ -16,171 +16,216 @@ const Login = () => {
     // Handle login logic here
   };
 
-  return (<>
+  const handleChange = (field) => (e) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  // Animation variants for better reusability
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  const scaleIn = {
+    hidden: { scale: 0.9, opacity: 0 },
+    visible: { scale: 1, opacity: 1 },
+  };
+
+  return (
+    <>
       <Backbar />
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center px-4">
-      {/* Background Image */}
-      <div className="absolute inset-0 -z-20 ">
-        <motion.img
-          src="./junkcar.jpg"
-          alt="Background Car"
-          className="w-full h-full object-cover opacity-98"
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 10, repeat: Infinity, repeatType: "mirror" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/50 to-green-200 "></div>
-      </div>
-
-      {/* Logo */}
-      <motion.div
-        className="mt-8 mb-4"
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        >
-        <img
-          src="logo.jpg"
-          alt="Revivo Logo"
-          className="w-24 h-24 bg-white rounded-full object-contain drop-shadow-xl"
-          />
-      </motion.div>
-
-      {/* Main Content */}
-      <motion.div
-        className="w-full max-w-md z-10 backdrop-blur-sm  p-8 rounded-2xl border border-white/40 shadow-2xl"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-        >
-        <h1 className="text-4xl font-bold text-center mb-3">
-          Welcome Back to Revivo!
-        </h1>
-        <p className="text-gray-600 text-center mb-8">
-          Sell your scrap car the smart way – Get instant AI valuation, list for
-          bidding, or sell car parts securely.
-        </p>
-
-        {/* Login Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/80 backdrop-blur-md p-8 rounded-xl shadow-lg mb-8 border border-white/40 hover:border-blue-200/40 duration-300"
+      <div className="min-h-screen relative overflow-hidden flex flex-col items-center px-4">
+        {/* Background Section */}
+        <div className="absolute inset-0 -z-20">
+          <motion.div
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "linear",
+            }}
+            className="w-full h-full"
           >
-          <div className="space-y-6">
-            {/* Email Input */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <FloatingLabelInput
-                id="email"
-                label="Email Address"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                />
-            </motion.div>
+            <img
+              src="./junkcar.jpg"
+              alt="Scrap car background"
+              className="w-full h-full object-cover opacity-90"
+              width={1920}
+              height={1080}
+            />
+          </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/70 to-green-100/80" />
+        </div>
 
-            {/* Password Input */}
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-              >
-              <FloatingLabelInput
-                id="password"
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+        {/* Main Content Container */}
+        <main className="w-full max-w-md z-10 mt-16">
+          {/* Logo Section */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={scaleIn}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex justify-center mb-6"
+          >
+            <img
+              src="logo.jpg"
+              alt="Revivo Logo"
+              className="w-28 h-28 bg-white rounded-full object-contain shadow-xl"
+              width={112}
+              height={112}
+            />
+          </motion.div>
+
+          {/* Login Card */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={scaleIn}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="backdrop-blur-sm bg-white/95 p-8 rounded-2xl border border-white/40 shadow-xl"
+          >
+            <header className="mb-8 text-center">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                Welcome Back to Revivo!
+              </h1>
+              <p className="text-gray-600">
+                Sell your scrap car the smart way – Get instant AI valuation, list
+                for bidding, or sell car parts securely.
+              </p>
+            </header>
+
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <motion.div variants={fadeInUp} transition={{ delay: 0.6 }}>
+                <FloatingLabelInput
+                  id="email"
+                  label="Email Address"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange("email")}
+                  autoComplete="email"
+                  required
                 />
-              <button
-                type="button"
-                aria-label="Toggle password visibility"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
-                onClick={() => setShowPassword(!showPassword)}
+              </motion.div>
+
+              <motion.div
+                variants={fadeInUp}
+                transition={{ delay: 0.8 }}
+                className="relative"
+              >
+                <FloatingLabelInput
+                  id="password"
+                  label="Password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={handleChange("password")}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                <i className={`fa ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
-              </button>
-            </motion.div>
+                  <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"} text-sm`} />
+                </button>
+              </motion.div>
 
-            {/* Submit Button */}
-            <motion.button
-              type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.2 }}
+              <motion.button
+                type="submit"
+                variants={fadeInUp}
+                transition={{ delay: 1 }}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-medium flex items-center justify-center"
               >
-              <i className="fa fa-lock mr-2"></i> Secure Login
-            </motion.button>
-          </div>
-        </form>
+                <i className="fa-solid fa-lock mr-2 text-sm" />
+                Secure Login
+              </motion.button>
+            </form>
 
-        {/* Secondary Actions */}
-        <motion.div
-          className="text-center space-y-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1.4 }}
+            {/* Secondary Actions */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={fadeInUp}
+              transition={{ delay: 1.2 }}
+              className="mt-8 text-center space-y-4 text-sm"
+            >
+              <p className="text-gray-600">
+                New here?{" "}
+                <a
+                  href="#"
+                  className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                >
+                  Create an Account
+                </a>
+              </p>
+              <p className="text-gray-600">
+                <a
+                  href="#"
+                  className="text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  Forgot Password?
+                </a>
+              </p>
+            </motion.div>
+          </motion.div>
+
+          {/* Support Section */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeInUp}
+            transition={{ delay: 1.4 }}
+            className="mt-6 text-center"
           >
-          <p className="text-gray-600">
-            New here?{" "}
             <a
               href="#"
-              className="text-blue-600 hover:underline font-semibold"
+              className="inline-flex items-center px-5 py-2.5 bg-white/80 hover:bg-white/95 backdrop-blur-sm rounded-lg border border-white/40 text-gray-700 hover:text-gray-900 transition-all"
             >
-              Create an Account
+              <i className="fa-solid fa-headset mr-2 text-blue-600" />
+              Need help? Contact Support
             </a>
-          </p>
-          <p className="text-gray-600">
-            Forgot Password?{" "}
-            <a href="#" className="text-blue-600 hover:underline">
-              Reset Here
+          </motion.div>
+        </main>
+
+        {/* Footer */}
+        <motion.footer
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: 1.6 }}
+          className="mt-auto py-8 text-center text-sm text-gray-600"
+        >
+          <p className="mb-4">© 2025 Revivo. All rights reserved.</p>
+          <nav className="flex justify-center space-x-5">
+            <a
+              href="#"
+              className="hover:text-blue-600 transition-colors"
+              aria-label="Facebook"
+            >
+              <i className="fab fa-facebook" />
             </a>
-          </p>
-        </motion.div>
-      </motion.div>
-
-      {/* Support Button */}
-      <motion.div
-        className="mt-8 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-lg border border-white/40 hover:bg-white/90 transition"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.6 }}
-        >
-        <i className="fa fa-headset mr-2"></i>
-        Need help? Contact Support
-      </motion.div>
-
-      {/* Footer */}
-      <motion.footer
-        className="mt-auto text-center text-gray-500 text-sm py-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.8 }}
-        >
-        <p>© 2025 Revivo. All rights reserved.</p>
-        <div className="flex justify-center space-x-4 mt-4">
-          <a href="#" className="hover:text-blue-600">
-            <i className="fab fa-facebook"></i>
-          </a>
-          <a href="#" className="hover:text-blue-600">
-            <i className="fab fa-twitter"></i>
-          </a>
-          <a href="#" className="hover:text-blue-600">
-            <i className="fab fa-linkedin"></i>
-          </a>
-        </div>
-      </motion.footer>
-    </div>
-        </>
+            <a
+              href="#"
+              className="hover:text-blue-600 transition-colors"
+              aria-label="Twitter"
+            >
+              <i className="fab fa-twitter" />
+            </a>
+            <a
+              href="#"
+              className="hover:text-blue-600 transition-colors"
+              aria-label="LinkedIn"
+            >
+              <i className="fab fa-linkedin" />
+            </a>
+          </nav>
+        </motion.footer>
+      </div>
+    </>
   );
 };
 
