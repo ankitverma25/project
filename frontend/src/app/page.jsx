@@ -176,7 +176,7 @@ const Home = () => {
                 </div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
-                <div className="text-emerald-400 text-2xl font-bold">30%</div>
+                <div className="text-emerald-400 text-2xl font-bold">25%</div>
                 <div className="text-white text-sm">Reduction in Pollution</div>
               </div>
             </motion.div>
