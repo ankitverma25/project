@@ -46,7 +46,7 @@ const Home = () => {
       },
       xAxis: {
         type: 'category',
-        data: ['2025', '2026', '2027', '2028', '2029'], // Projected years
+        data: ['2025', '2026', '2027', '2028', '2029','2030'], // Projected years
       },
       yAxis: {
         type: 'value',
