@@ -46,7 +46,7 @@ const Home = () => {
       },
       xAxis: {
         type: 'category',
-        data: ['2025', '2026', '2027', '2028', '2029'], // Projected years
+        data: ['2025', '2026', '2027', '2028', '2029','2030'], // Projected years
       },
       yAxis: {
         type: 'value',
@@ -176,7 +176,7 @@ const Home = () => {
                 </div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg">
-                <div className="text-emerald-400 text-2xl font-bold">30%</div>
+                <div className="text-emerald-400 text-2xl font-bold">25%</div>
                 <div className="text-white text-sm">Reduction in Pollution</div>
               </div>
             </motion.div>
