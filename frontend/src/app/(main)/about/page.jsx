@@ -320,7 +320,7 @@ const About = () => {
                 <li className="text-gray-400"><MapPin className='inline p-1'/>yaduvanshi market</li>
                 <li className="text-gray-400">Uttar Pradesh, 226028</li>
                 <li className="text-gray-400"><Phone className='inline p-1'/>+91 88585 20026</li>
-                <li className="text-gray-400"><MessageCircle className='inline p-1'/>contact@revivo.in</li>
+                <li className="text-gray-400"><MessageCircle className='inline p-1'/>ashish0026ydv@gmail.com</li>
               </ul>
             </div>
             <div>

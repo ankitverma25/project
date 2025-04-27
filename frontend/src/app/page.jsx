@@ -464,10 +464,10 @@ const Home = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Contact</h3>
               <ul className="space-y-2">
-                <li className="text-gray-400">1234 Eco Drive</li>
-                <li className="text-gray-400">Green City, EC 12345</li>
-                <li className="text-gray-400">+1 (555) 123-4567</li>
-                <li className="text-gray-400">support@revivo.com</li>
+                <li className="text-gray-400">Gomti Nagar Lucknow</li>
+                <li className="text-gray-400">Uttar Pradesh, 226028</li>
+                <li className="text-gray-400">+91 88585 20026</li>
+                <li className="text-gray-400">ashish0026ydv@gmail.com</li>
               </ul>
             </div>
             <div>

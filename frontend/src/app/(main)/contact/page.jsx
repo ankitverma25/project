@@ -141,7 +141,7 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-lg">Location</h3>
                     <p className="text-gray-600">
-                      123 Industrial Avenue, Automotive District, CA 90210
+                    Uttar Pradesh, 226028
                     </p>
                   </div>
                 </div>
@@ -162,8 +162,8 @@ const Contact = () => {
                   </svg>
                   <div>
                     <h3 className="font-semibold text-lg">Phone</h3>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
-                    <p className="text-gray-600">+1 (555) 987-6543</p>
+                    <p className="text-gray-600">+91 88585 20026</p>
+                    <p className="text-gray-600">+91 88585 20026</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -183,8 +183,8 @@ const Contact = () => {
                   </svg>
                   <div>
                     <h3 className="font-semibold text-lg">Email</h3>
-                    <p className="text-gray-600">contact@revivo.com</p>
-                    <p className="text-gray-600">support@revivo.com</p>
+                    <p className="text-gray-600">ashish0026ydv@gmail.com</p>
+                    <p className="text-gray-600">ashish0026ydv@gmail.com</p>
                   </div>
                 </div>
               </div>
