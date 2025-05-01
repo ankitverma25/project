@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const carSchema = new mongoose.Schema({
   owner: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'CarOwner', 
+    ref: 'User', // changed from 'CarOwner' to 'User'
     required: [true, "enter the owner"] 
   },
   model: { 

@@ -5,6 +5,7 @@ import { ShieldCheck, Leaf, DollarSign, Clock, Quote, CheckCircle, Eye, EyeOff }
 import FloatingLabelInput from "@/components/FloatingLabelInput";
 import Backbar from '@/components/Backbar';
 import Link from 'next/link';
+import axios from 'axios';
 
 const Sign = () => {
   const [formData, setFormData] = useState({
@@ -27,9 +28,38 @@ const Sign = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setShowSuccess(true);
+    if (formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.password) {
+      alert('All fields are required');
+      return;
+    }
+    try {
+      const response = await axios.post('http://localhost:8000/user/add', {
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+      });
+      setShowSuccess(true);
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+      });
+    } catch (err) {
+      if (err.response && err.response.data) {
+        alert(err.response.data.message || JSON.stringify(err.response.data));
+      } else {
+        alert('Signup failed');
+      }
+    }
   };
 
   return (

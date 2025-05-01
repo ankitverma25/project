@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import FloatingLabelInput from "@/components/FloatingLabelInput";
 import Backbar from "@/components/Backbar";
+import axios from 'axios';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,9 +12,29 @@ const Login = () => {
     password: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
+    if (!formData.email || !formData.password) {
+      alert('Email and password are required');
+      return;
+    }
+    try {
+      const response = await axios.post('http://localhost:8000/user/login', {
+        email: formData.email,
+        password: formData.password,
+      });
+      // Store token and user in localStorage
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      alert('Login successful!');
+      // Redirect or update UI as needed
+    } catch (err) {
+      if (err.response && err.response.data) {
+        alert(err.response.data.message || JSON.stringify(err.response.data));
+      } else {
+        alert('Login failed');
+      }
+    }
   };
 
   const handleChange = (field) => (e) => {

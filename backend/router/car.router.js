@@ -1,13 +1,14 @@
 import { Router } from "express";
-import { addCar,getAllCars} from "../controllers/car.controller.js";
-
-
+import { addCar, getAllCars } from "../controllers/car.controller.js";
+import upload from '../middleware/multer.middleware.js';
+import auth from '../middleware/auth.middleware.js';
 
 const router = Router();   
 
-
-router.route('/addCar').post(addCar);
-router.route('/allCars').get(getAllCars);
-
+router.route('/addCar').post(auth, upload.fields([
+  { name: 'photos', maxCount: 5 },
+  { name: 'rcBook', maxCount: 1 }
+]), addCar);
+router.route('/allCars').get(auth, getAllCars);
 
 export default router;
