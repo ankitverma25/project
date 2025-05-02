@@ -57,7 +57,7 @@ export default function Header() {
                 onClick={() => setDropdown((d) => !d)}
               >
                 <img
-                  src={user?.avatar || '/avatar-placeholder.png'}
+                  src={user?.avatar && user.avatar.startsWith('http') ? user.avatar : '/avatar-placeholder.png'}
                   alt="avatar"
                   className="w-8 h-8 rounded-full object-cover border"
                 />
@@ -65,7 +65,7 @@ export default function Header() {
                 <ChevronDown className="text-gray-500 w-4 h-4" />
               </button>
               {dropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded shadow-lg z-50 border">
+                <div className="absolute top-10 right-0 mt-2 w-48 bg-white rounded shadow-lg z-50 border">
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
                     onClick={() => { setDropdown(false); router.push('/user/settings'); }}

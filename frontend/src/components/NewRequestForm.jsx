@@ -55,8 +55,13 @@ export default function NewRequestForm({ formik, ownerId }) {
       // RC Book
       formData.append('rcBook', rcBook);
       // Send to backend
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
       await axios.post('http://localhost:8000/car/addCar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
       });
       setSuccess('Car details saved!');
       setPhotos([]);

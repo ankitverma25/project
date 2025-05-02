@@ -32,6 +32,9 @@ export default function UserSettingsPage() {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', 'ml_default');
+
+    console.log('FormData entries:', [...formData.entries()]);
+
     try {
       const res = await axios.post('https://api.cloudinary.com/v1_1/dylnn5dcz/image/upload', formData);
       const url = res.data.secure_url;
@@ -40,7 +43,8 @@ export default function UserSettingsPage() {
       user.avatar = url;
       localStorage.setItem('user', JSON.stringify(user));
       setSuccess('Avatar updated!');
-    } catch {
+    } catch (err) {
+      console.error('Cloudinary upload error:', err.response?.data || err.message);
       setError('Failed to update avatar');
     }
   };
