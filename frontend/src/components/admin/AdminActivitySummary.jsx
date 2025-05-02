@@ -1,3 +1,5 @@
+'use client';
+
 export default function AdminActivitySummary() {
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-6">

@@ -1,3 +1,4 @@
+'use client';
 import AdminQuickActions from '@/components/admin/AdminQuickActions';
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid';
 import PendingDealerApprovals from '@/components/admin/PendingDealerApprovals';

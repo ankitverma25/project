@@ -14,6 +14,7 @@ export default function DealerSignupPage() {
       name: "",
       email: "",
       password: "",
+      phone: "",
       businessName: "",
       licenseNumber: "",
     },
@@ -21,6 +22,7 @@ export default function DealerSignupPage() {
       name: Yup.string().min(3, "Name must be at least 3 characters").required("Name is required"),
       email: Yup.string().email("Invalid email address").required("Email is required"),
       password: Yup.string().min(6, "Password must be at least 6 characters").required("Password is required"),
+      phone: Yup.string().matches(/^\d{10}$/, "Phone must be 10 digits").required("Phone is required"),
       businessName: Yup.string().min(2, "Business name is too short").required("Business name is required"),
       licenseNumber: Yup.string().min(4, "License number is too short").required("License number is required"),
     }),
@@ -29,8 +31,8 @@ export default function DealerSignupPage() {
       setSuccess("");
       setLoading(true);
       try {
-        await axios.post("http://localhost:8000/user/add", values);
-        setSuccess("Signup successful! Please login after admin approval.");
+        await axios.post("http://localhost:8000/dealer/signup", values);
+        setSuccess("Signup successful! Wait for admin approval before logging in.");
         resetForm();
       } catch (err) {
         setError(
@@ -91,6 +93,20 @@ export default function DealerSignupPage() {
             required
           />
           {formik.touched.password && formik.errors.password && <div className="text-red-500 text-xs">{formik.errors.password}</div>}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+          <input
+            type="text"
+            name="phone"
+            placeholder="Phone Number"
+            value={formik.values.phone}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            className={`w-full border border-blue-200 rounded px-3 py-2 focus:ring-2 focus:ring-blue-400 ${formik.touched.phone && formik.errors.phone ? 'border-red-400' : ''}`}
+            required
+          />
+          {formik.touched.phone && formik.errors.phone && <div className="text-red-500 text-xs">{formik.errors.phone}</div>}
         </div>
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Business Name</label>

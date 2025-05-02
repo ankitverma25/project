@@ -107,6 +107,12 @@ const page = () => {
                     <div key={bid._id} className="bg-gray-50 rounded p-4 flex flex-col md:flex-row md:items-center justify-between">
                       <div>
                         <div className="font-medium text-gray-800">Dealer: {bid.dealer?.name || 'N/A'}</div>
+                        {bid.dealer?.businessName && (
+                          <div className="text-sm text-gray-500">Business: {bid.dealer.businessName}</div>
+                        )}
+                        {bid.dealer?.email && (
+                          <div className="text-sm text-gray-500">Email: {bid.dealer.email}</div>
+                        )}
                         <div className="text-sm text-gray-500">Amount: ₹{bid.amount}</div>
                         <div className="text-sm text-gray-500">Status: {bid.isAccepted ? 'Accepted' : 'Pending'}</div>
                         <div className="text-sm text-gray-500">Date: {new Date(bid.createdAt).toLocaleDateString()}</div>

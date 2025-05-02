@@ -21,9 +21,9 @@ export default function DealerLoginPage() {
       setError("");
       setLoading(true);
       try {
-        const res = await axios.post("http://localhost:8000/user/login", values);
+        const res = await axios.post("http://localhost:8000/dealer/login", values);
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("dealer", JSON.stringify(res.data.dealer));
         window.location.href = "/dealer/dashboard";
       } catch (err) {
         setError(
