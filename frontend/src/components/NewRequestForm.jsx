@@ -146,7 +146,7 @@ export default function NewRequestForm({ formik, ownerId }) {
       </div>
       {/* Photo Upload */}
       <div>
-        <label className="block text-sm sm:text-base font-medium mb-2">Vehicle Photos</label>
+        <label className="block text-sm sm:text-base font-medium mb-2">Vehicle Photos:</label>
         <input type="file" multiple accept="image/*" onChange={e => setPhotos([...e.target.files])} />
         {photos.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
@@ -157,7 +157,7 @@ export default function NewRequestForm({ formik, ownerId }) {
         )}
       </div>
       <div>
-        <label className="block text-sm sm:text-base font-medium mb-2">RC Book (PDF/Image)</label>
+        <label className="block text-sm sm:text-base font-medium mb-2">RC Book (PDF/Image):</label>
         <input type="file" accept="image/*,application/pdf" onChange={e => setRcBook(e.target.files[0])} />
         {rcBook && <span className="text-xs bg-gray-100 px-2 py-1 rounded ml-2">{rcBook.name}</span>}
       </div>
