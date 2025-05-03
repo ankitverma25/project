@@ -48,6 +48,10 @@ export default function NewRequestForm({ formik, ownerId }) {
       formData.append('fuelType', formik.values.fuelType);
       formData.append('condition', getConditionString(formik.values.condition));
       if (formik.values.mileage) formData.append('mileage', formik.values.mileage);
+      formData.append('vehicleNumber', formik.values.vehicleNumber);
+      formData.append('address[state]', formik.values.state);
+      formData.append('address[city]', formik.values.city);
+      formData.append('address[pincode]', formik.values.pincode);
       // Photos
       for (let i = 0; i < photos.length; i++) {
         formData.append('photos', photos[i]);
@@ -144,6 +148,23 @@ export default function NewRequestForm({ formik, ownerId }) {
           <div className="text-red-500 text-xs mt-1">{formik.errors.condition}</div>
         )}
       </div>
+      {/* Vehicle Number */}
+      <div>
+        <label className="block text-sm sm:text-base font-medium mb-2">Vehicle Number <span className="text-red-500">*</span></label>
+        <input
+          type="text"
+          name="vehicleNumber"
+          value={formik.values.vehicleNumber}
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          className="w-full p-2.5 border rounded-lg"
+          placeholder="e.g. DL8CAF1234"
+          required
+        />
+        {formik.touched.vehicleNumber && formik.errors.vehicleNumber && (
+          <div className="text-red-500 text-xs mt-1">{formik.errors.vehicleNumber}</div>
+        )}
+      </div>
       {/* Photo Upload */}
       <div>
         <label className="block text-sm sm:text-base font-medium mb-2">Vehicle Photos:</label>
@@ -190,22 +211,59 @@ export default function NewRequestForm({ formik, ownerId }) {
           <div className="text-red-500 text-xs mt-1">{formik.errors.mileage}</div>
         )}
       </div>
-      {/* Pickup Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      {/* Address Fields */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         <div>
-          <label className="block text-sm sm:text-base font-medium mb-1">Pickup Address</label>
-          <textarea
-            name="address"
-            value={formik.values.address}
+          <label className="block text-sm sm:text-base font-medium mb-1">State <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            name="state"
+            value={formik.values.state}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            rows="3"
-            className="w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
+            className="w-full p-2.5 border rounded-lg"
+            placeholder="State"
+            required
           />
-          {formik.touched.address && formik.errors.address && (
-            <div className="text-red-500 text-xs mt-1">{formik.errors.address}</div>
+          {formik.touched.state && formik.errors.state && (
+            <div className="text-red-500 text-xs mt-1">{formik.errors.state}</div>
           )}
         </div>
+        <div>
+          <label className="block text-sm sm:text-base font-medium mb-1">City <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            name="city"
+            value={formik.values.city}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            className="w-full p-2.5 border rounded-lg"
+            placeholder="City"
+            required
+          />
+          {formik.touched.city && formik.errors.city && (
+            <div className="text-red-500 text-xs mt-1">{formik.errors.city}</div>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm sm:text-base font-medium mb-1">Pincode <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            name="pincode"
+            value={formik.values.pincode}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            className="w-full p-2.5 border rounded-lg"
+            placeholder="Pincode"
+            required
+          />
+          {formik.touched.pincode && formik.errors.pincode && (
+            <div className="text-red-500 text-xs mt-1">{formik.errors.pincode}</div>
+          )}
+        </div>
+      </div>
+      {/* Pickup Details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-4 sm:space-y-6">
           <div>
             <label className="block text-sm sm:text-base font-medium mb-1">Pickup Date</label>

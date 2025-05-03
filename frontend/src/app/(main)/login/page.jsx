@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import FloatingLabelInput from "@/components/FloatingLabelInput";
+import { Eye, EyeOff } from 'lucide-react';
 import Backbar from "@/components/Backbar";
 import axios from 'axios';
 
@@ -120,15 +120,19 @@ const Login = () => {
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <motion.div variants={fadeInUp} transition={{ delay: 0.6 }}>
-                <FloatingLabelInput
-                  id="email"
-                  label="Email Address"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange("email")}
-                  autoComplete="email"
-                  required
-                />
+                <div className="relative">
+                  <label htmlFor="email" className="font-bold">user email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange("email")}
+                    autoComplete="email"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-transparent placeholder-gray-400"
+                    placeholder="Email Address"
+                  />
+                </div>
               </motion.div>
 
               <motion.div
@@ -136,22 +140,24 @@ const Login = () => {
                 transition={{ delay: 0.8 }}
                 className="relative"
               >
-                <FloatingLabelInput
+                <label className=" font-extrabold " htmlFor="password">user password</label>
+                <input
                   id="password"
-                  label="Password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleChange("password")}
                   autoComplete="current-password"
                   required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-transparent placeholder-gray-400"
+                  placeholder="Password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-[10%] text-gray-500 hover:text-gray-700 transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  <i className={`fa-solid ${showPassword ? "fa-eye-slash" : "fa-eye"} text-sm`} />
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </motion.div>
 
@@ -177,7 +183,7 @@ const Login = () => {
               <p className="text-gray-600">
                 New here?{" "}
                 <a
-                  href="#"
+                  href="/signup"
                   className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
                 >
                   Create an Account
@@ -203,7 +209,7 @@ const Login = () => {
             className="mt-6 text-center"
           >
             <a
-              href="#"
+              href="/contact"
               className="inline-flex items-center px-5 py-2.5 bg-white/80 hover:bg-white/95 backdrop-blur-sm rounded-lg border border-white/40 text-gray-700 hover:text-gray-900 transition-all"
             >
               <i className="fa-solid fa-headset mr-2 text-blue-600" />

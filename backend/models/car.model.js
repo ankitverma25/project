@@ -36,6 +36,15 @@ const carSchema = new mongoose.Schema({
     required: [true, "enter the fuel type"] 
   }, // Ex: "petrol"
 
+  vehicleNumber: {
+    type: String,
+    required: [true, "enter the vehicle number"]
+  },
+  address: {
+    state: { type: String, required: [true, "enter the state"] },
+    city: { type: String, required: [true, "enter the city"] },
+    pincode: { type: String, required: [true, "enter the pincode"] }
+  },
 
   condition: { 
     type: String, 

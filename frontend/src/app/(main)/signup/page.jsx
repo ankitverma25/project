@@ -229,8 +229,12 @@ const Sign = () => {
                   Create Account
                 </button>
               </form>
+              <div className="mt-2 text-center text-gray-500 text-sm">
+              <Link href="/login" className="text-emerald-600 hover:underline">
+              already have account? 
+                  </Link></div>
 
-              <div className="mt-6 text-center text-gray-500 text-sm">
+              <div className="mt-2 text-center text-gray-500 text-sm">
                 <p>By signing up, you agree to our</p>
                 <div className="mt-1">
                   <Link href="#" className="text-emerald-600 hover:underline">

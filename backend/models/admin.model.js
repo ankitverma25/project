@@ -4,16 +4,16 @@ import bcrypt from 'bcryptjs';
 const adminSchema = new mongoose.Schema({
   name: { 
     type: String, 
-    required: [true, "Admin ka naam dalna zaroori hai"] 
+    required: [true, "Admin name is required"], 
   },
   email: { 
     type: String, 
-    required: [true, "Email dalna zaroori hai"], 
+    required: [true, "Email is required"], 
     unique: true 
   },
   password: { 
     type: String, 
-    required: [true, "Password dalna zaroori hai"] 
+    required: [true, "Password must be there"] 
   },
   permissions: { 
     type: [String], 

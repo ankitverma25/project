@@ -16,8 +16,9 @@ import userRouter from '../router/user.router.js';
 import carRouter from '../router/car.router.js';
 import dealerRouter from '../router/dealer.router.js';
 import bidRouter from '../router/bid.router.js';
+import adminRouter from '../router/admin.router.js';
 
-
+app.use('/admin',adminRouter);
 app.use('/user', userRouter);
 app.use('/car', carRouter);
 app.use('/dealer', dealerRouter);
