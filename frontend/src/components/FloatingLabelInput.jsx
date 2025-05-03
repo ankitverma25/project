@@ -2,13 +2,14 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-const FloatingLabelInput = ({ id, label, type = "text", value, onChange }) => {
+const FloatingLabelInput = ({ id, label, type = "text", value, onChange, name }) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
     <div className="relative w-full">
       <input
         id={id}
+        name={name || id}
         type={type}
         value={value}
         onChange={onChange}

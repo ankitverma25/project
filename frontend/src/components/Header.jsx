@@ -1,11 +1,14 @@
 'use client'
 import { Search, Bell, ChevronDown } from 'lucide-react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function Header() {
   const pathname = usePathname()
+  const router = useRouter()
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user')) : null
   const [showNotifications, setShowNotifications] = useState(false)
+  const [dropdown, setDropdown] = useState(false)
 
   const getTitle = () => {
     const route = pathname.split('/').pop()
@@ -48,13 +51,40 @@ export default function Header() {
               </button>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <img 
-                src="/user-avatar.jpg" 
-                className="w-8 h-8 rounded-full" 
-                alt="User avatar"
-              />
-              <ChevronDown className="text-gray-500 w-4 h-4" />
+            <div className="flex items-center space-x-2 relative">
+              <button
+                className="flex items-center gap-2 focus:outline-none"
+                onClick={() => setDropdown((d) => !d)}
+              >
+                <img
+                  src={user?.avatar && user.avatar.startsWith('http') ? user.avatar : '/avatar-placeholder.png'}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full object-cover border"
+                />
+                <span className="font-medium text-gray-700">{user?.name || 'User'}</span>
+                <ChevronDown className="text-gray-500 w-4 h-4" />
+              </button>
+              {dropdown && (
+                <div className="absolute top-10 right-0 mt-2 w-48 bg-white rounded shadow-lg z-50 border">
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                    onClick={() => { setDropdown(false); router.push('/user/settings'); }}
+                  >
+                    Settings
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user');
+                      setDropdown(false);
+                      router.push('/');
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

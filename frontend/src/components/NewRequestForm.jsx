@@ -1,109 +1,199 @@
 'use client'
 import { Upload, Star, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import axios from 'axios';
+import { useState, useRef } from 'react';
 
-export default function NewRequestForm({ formik }) {
-  const renderStars = () => {
-    return [1, 2, 3, 4, 5].map(star => (
-      <button
-        key={star}
-        type="button"
-        onClick={() => formik.setFieldValue('condition', star)}
-        className="focus:outline-none"
-      >
-        {star <= formik.values.condition ? (
-          <Star className="w-6 h-6 sm:w-7 sm:h-7 text-amber-400 fill-current" />
-        ) : (
-          <Star className="w-6 h-6 sm:w-7 sm:h-7 text-amber-400" />
-        )}
-      </button>
-    ))
-  }
+export default function NewRequestForm({ formik, ownerId }) {
+  const [photos, setPhotos] = useState([]);
+  const [rcBook, setRcBook] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [aiPrice, setAiPrice] = useState(null);
+  const carModelInputRef = useRef();
+
+  const getConditionString = (num) => {
+    if (num >= 5) return 'excellent';
+    if (num >= 3) return 'good';
+    return 'poor';
+  };
+
+  const handleAIEstimate = (e) => {
+    e.preventDefault();
+    // Simple mock: base + year + condition
+    let base = 50000;
+    let year = parseInt(formik.values.year) || 2015;
+    let age = new Date().getFullYear() - year;
+    let cond = formik.values.condition;
+    let condFactor = cond === 'excellent' ? 1 : cond === 'good' ? 0.8 : 0.5;
+    let price = Math.max(10000, Math.round(base * condFactor - age * 2000));
+    setAiPrice(price);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setUploading(true);
+    try {
+      // Validation: check required files
+      if (!photos.length) throw new Error('At least one vehicle photo is required.');
+      if (!rcBook) throw new Error('RC Book file is required.');
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('owner', ownerId || 'USER_ID_PLACEHOLDER');
+      formData.append('model', formik.values.carModel);
+      formData.append('year', formik.values.year);
+      formData.append('description', formik.values.description);
+      formData.append('fuelType', formik.values.fuelType);
+      formData.append('condition', getConditionString(formik.values.condition));
+      if (formik.values.mileage) formData.append('mileage', formik.values.mileage);
+      // Photos
+      for (let i = 0; i < photos.length; i++) {
+        formData.append('photos', photos[i]);
+      }
+      // RC Book
+      formData.append('rcBook', rcBook);
+      // Send to backend
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:8000/car/addCar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+      });
+      setSuccess('Car details saved!');
+      setPhotos([]);
+      setRcBook(null);
+      formik.resetForm();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to save car');
+    }
+    setUploading(false);
+  };
 
   return (
-    <form onSubmit={formik.handleSubmit} className="space-y-4 sm:space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {/* Car Details Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <div>
-          <label className="block text-sm sm:text-base font-medium mb-1">
-            Car Model
-          </label>
-          <select
+          <label className="block text-sm sm:text-base font-medium mb-1">Car Model</label>
+          <input
+            ref={carModelInputRef}
+            list="car-models"
             name="carModel"
             value={formik.values.carModel}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             className="w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
-          >
-            <option value="">Select Car Model</option>
-            <option value="swift-dzire">Maruti Swift Dzire</option>
-            <option value="honda-city">Honda City</option>
-          </select>
+            placeholder="Type or select car model"
+          />
+          <datalist id="car-models">
+            <option value="Maruti Swift Dzire" />
+            <option value="Honda City" />
+            <option value="Hyundai i20" />
+            <option value="Tata Nexon" />
+            <option value="Alto" />
+            <option value="WagonR" />
+            <option value="Baleno" />
+            <option value="Ertiga" />
+            <option value="Creta" />
+            <option value="Other" />
+          </datalist>
           {formik.touched.carModel && formik.errors.carModel && (
-            <div className="text-red-500 text-xs mt-1">
-              {formik.errors.carModel}
-            </div>
+            <div className="text-red-500 text-xs mt-1">{formik.errors.carModel}</div>
           )}
         </div>
-
         <div>
-          <label className="block text-sm sm:text-base font-medium mb-1">
-            Manufacturing Year
-          </label>
+          <label className="block text-sm sm:text-base font-medium mb-1">Manufacturing Year</label>
           <input
             type="range"
             name="year"
-            min="2000"
-            max="2024"
+            min="1980"
+            max="2025"
             value={formik.values.year}
             onChange={formik.handleChange}
             className="w-full accent-green-600"
           />
           <div className="flex justify-between text-xs sm:text-sm text-gray-500 mt-1">
-            <span>2000</span>
+            <span>1980</span>
             <span>{formik.values.year}</span>
-            <span>2024</span>
+            <span>2025</span>
           </div>
         </div>
       </div>
-
       {/* Vehicle Condition */}
       <div>
-        <label className="block text-sm sm:text-base font-medium mb-2">
-          Vehicle Condition
-        </label>
-        <div className="flex justify-center md:justify-start space-x-1">
-          {renderStars()}
+        <label className="block text-sm sm:text-base font-medium mb-2">Vehicle Condition</label>
+        <div className="flex gap-4">
+          <label className="inline-flex items-center">
+            <input type="radio" name="condition" value="excellent" checked={formik.values.condition === 'excellent'} onChange={formik.handleChange} />
+            <span className="ml-2">Excellent</span>
+          </label>
+          <label className="inline-flex items-center">
+            <input type="radio" name="condition" value="good" checked={formik.values.condition === 'good'} onChange={formik.handleChange} />
+            <span className="ml-2">Good</span>
+          </label>
+          <label className="inline-flex items-center">
+            <input type="radio" name="condition" value="poor" checked={formik.values.condition === 'poor'} onChange={formik.handleChange} />
+            <span className="ml-2">Poor</span>
+          </label>
         </div>
         {formik.touched.condition && formik.errors.condition && (
-          <div className="text-red-500 text-xs mt-1">
-            {formik.errors.condition}
+          <div className="text-red-500 text-xs mt-1">{formik.errors.condition}</div>
+        )}
+      </div>
+      {/* Photo Upload */}
+      <div>
+        <label className="block text-sm sm:text-base font-medium mb-2">Vehicle Photos:</label>
+        <input type="file" multiple accept="image/*" onChange={e => setPhotos([...e.target.files])} />
+        {photos.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {Array.from(photos).map((file, idx) => (
+              <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">{file.name}</span>
+            ))}
           </div>
         )}
       </div>
-
-      {/* Photo Upload */}
       <div>
-        <label className="block text-sm sm:text-base font-medium mb-2">
-          Vehicle Photos
-        </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-          <Upload className="mx-auto text-gray-400 w-8 h-8 sm:w-10 sm:h-10" />
-          <p className="text-sm text-gray-500 mt-2">
-            Drag and drop photos or{' '}
-            <span className="text-blue-600 cursor-pointer">browse</span>
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            Maximum 5 photos (JPG, PNG) up to 5MB each
-          </p>
-        </div>
+        <label className="block text-sm sm:text-base font-medium mb-2">RC Book (PDF/Image):</label>
+        <input type="file" accept="image/*,application/pdf" onChange={e => setRcBook(e.target.files[0])} />
+        {rcBook && <span className="text-xs bg-gray-100 px-2 py-1 rounded ml-2">{rcBook.name}</span>}
       </div>
-
+      {/* Description */}
+      <div>
+        <label className="block text-sm sm:text-base font-medium mb-2">Description</label>
+        <textarea name="description" value={formik.values.description} onChange={formik.handleChange} className="w-full p-2.5 border rounded-lg" />
+        {formik.touched.description && formik.errors.description && (
+          <div className="text-red-500 text-xs mt-1">{formik.errors.description}</div>
+        )}
+      </div>
+      {/* Fuel Type */}
+      <div>
+        <label className="block text-sm sm:text-base font-medium mb-2">Fuel Type</label>
+        <select name="fuelType" value={formik.values.fuelType} onChange={formik.handleChange} className="w-full p-2.5 border rounded-lg">
+          <option value="">Select Fuel Type</option>
+          <option value="petrol">Petrol</option>
+          <option value="diesel">Diesel</option>
+          <option value="cng">CNG</option>
+        </select>
+        {formik.touched.fuelType && formik.errors.fuelType && (
+          <div className="text-red-500 text-xs mt-1">{formik.errors.fuelType}</div>
+        )}
+      </div>
+      {/* Mileage */}
+      <div>
+        <label className="block text-sm sm:text-base font-medium mb-2">Mileage (km)</label>
+        <input type="number" name="mileage" value={formik.values.mileage || ''} onChange={formik.handleChange} className="w-full p-2.5 border rounded-lg" />
+        {formik.touched.mileage && formik.errors.mileage && (
+          <div className="text-red-500 text-xs mt-1">{formik.errors.mileage}</div>
+        )}
+      </div>
       {/* Pickup Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <div>
-          <label className="block text-sm sm:text-base font-medium mb-1">
-            Pickup Address
-          </label>
+          <label className="block text-sm sm:text-base font-medium mb-1">Pickup Address</label>
           <textarea
             name="address"
             value={formik.values.address}
@@ -113,17 +203,12 @@ export default function NewRequestForm({ formik }) {
             className="w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
           />
           {formik.touched.address && formik.errors.address && (
-            <div className="text-red-500 text-xs mt-1">
-              {formik.errors.address}
-            </div>
+            <div className="text-red-500 text-xs mt-1">{formik.errors.address}</div>
           )}
         </div>
-
         <div className="space-y-4 sm:space-y-6">
           <div>
-            <label className="block text-sm sm:text-base font-medium mb-1">
-              Pickup Date
-            </label>
+            <label className="block text-sm sm:text-base font-medium mb-1">Pickup Date</label>
             <div className="relative">
               <input
                 type="date"
@@ -132,19 +217,14 @@ export default function NewRequestForm({ formik }) {
                 onChange={formik.handleChange}
                 className="w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
               />
-              <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              {/* <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" /> */}
             </div>
             {formik.touched.pickupDate && formik.errors.pickupDate && (
-              <div className="text-red-500 text-xs mt-1">
-                {formik.errors.pickupDate}
-              </div>
+              <div className="text-red-500 text-xs mt-1">{formik.errors.pickupDate}</div>
             )}
           </div>
-
           <div>
-            <label className="block text-sm sm:text-base font-medium mb-1">
-              Time Slot
-            </label>
+            <label className="block text-sm sm:text-base font-medium mb-1">Time Slot</label>
             <div className="relative">
               <select
                 name="timeSlot"
@@ -160,27 +240,32 @@ export default function NewRequestForm({ formik }) {
               <Clock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             </div>
             {formik.touched.timeSlot && formik.errors.timeSlot && (
-              <div className="text-red-500 text-xs mt-1">
-                {formik.errors.timeSlot}
-              </div>
+              <div className="text-red-500 text-xs mt-1">{formik.errors.timeSlot}</div>
             )}
           </div>
         </div>
       </div>
-
       {/* Form Actions */}
+      {error && <div className="text-red-500 text-sm">{error}</div>}
+      {success && <div className="text-green-600 text-sm">{success}</div>}
+      {aiPrice && (
+        <div className="text-blue-600 text-sm font-semibold">Estimated AI Price: ₹{aiPrice}</div>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6">
         <button
           type="button"
-          className="w-full sm:w-auto px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm sm:text-base"
+          className="w-full sm:w-auto px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm sm:text-base font-semibold"
+          onClick={handleAIEstimate}
+          disabled={uploading}
         >
-          Save Draft
+          Get AI Valuation
         </button>
         <button
           type="submit"
           className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
+          disabled={uploading}
         >
-          Submit Request
+          {uploading ? 'Saving...' : 'Submit Request'}
         </button>
       </div>
     </form>
