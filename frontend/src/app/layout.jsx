@@ -30,9 +30,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-
-      className={`${vinaSans.variable}`}      >
+      <body className={`${vinaSans.variable}`}>
         <PrelineScript />
         <Toaster />
         {children}

@@ -183,16 +183,16 @@ const Home = () => {
 
             {/* Buttons */}
             <motion.div
-              className="mt-10 flex gap-y-2 flex-col md:flex-row"
+              className="mt-10 flex flex-col md:flex-row gap-4"
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 1, delay: 3 }}
             >
-              <button className="px-8 py-3 mx-auto bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 cursor-pointer whitespace-nowrap flex items-center gap-2">
+              <button className="px-8 py-3 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 cursor-pointer whitespace-nowrap flex items-center gap-2">
                 <Calculator className="w-5 h-5" />
                 Calculate Benefits
               </button>
-              <button className="px-8 py-3 mx-auto bg-white text-gray-900 rounded-2xl hover:bg-gray-100 cursor-pointer whitespace-nowrap flex items-center gap-2">
+              <button className="px-8 py-3 bg-white text-gray-900 rounded-2xl hover:bg-gray-100 cursor-pointer whitespace-nowrap flex items-center gap-2">
                 <Recycle className="w-5 h-5" />
                 Scrap Your Vehicle
               </button>

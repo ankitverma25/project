@@ -58,55 +58,6 @@ const login = async (req, res) => {
     }
 };
 
-// Dealer login controller
-const dealerLogin = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const dealer = await Dealer.findOne({ email });
-        if (!dealer) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-        const isMatch = await bcrypt.compare(password, dealer.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-        if (!dealer.isApproved) {
-            return res.status(403).json({ message: 'Dealer not approved by admin' });
-        }
-        const { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved } = dealer;
-        const payload = { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3h' },
-            (err, token) => {
-                if (err) {
-                    console.log(err);
-                    res.status(500).json(err);
-                } else {
-                    res.status(200).json({ token, dealer: payload });
-                }
-            }
-        );
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: 'Server error', error: err });
-    }
-};
-
-// Dealer signup controller
-const dealerSignup = async (req, res) => {
-    try {
-        // Check if dealer already exists
-        const existing = await Dealer.findOne({ email: req.body.email });
-        if (existing) {
-            return res.status(400).json({ message: 'Dealer with this email already exists' });
-        }
-        const dealer = new Dealer(req.body);
-        await dealer.save();
-        res.status(200).json({ message: 'Dealer registered successfully. Wait for admin approval.' });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: 'Signup failed', error: err });
-    }
-};
 
 // Function to upload avatar
 const uploadAvatar = async (req, res) => {
@@ -170,4 +121,4 @@ const approveDealer = async (req, res) => {
     }
 };
 
-export { addUser, getAllUsers, login, uploadAvatar, updateUser, dealerLogin, dealerSignup, getPendingDealers, approveDealer };
+export { addUser, getAllUsers, login, uploadAvatar, updateUser, getPendingDealers, approveDealer };

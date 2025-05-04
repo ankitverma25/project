@@ -1,14 +1,23 @@
 'use client'
 import { Search, Bell, ChevronDown } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user')) : null
+  const [user, setUser] = useState(null)
+  const [isClient, setIsClient] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [dropdown, setDropdown] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+    if (typeof window !== 'undefined') {
+      const u = JSON.parse(localStorage.getItem('user'))
+      setUser(u)
+    }
+  }, [])
 
   const getTitle = () => {
     const route = pathname.split('/').pop()
@@ -57,11 +66,11 @@ export default function Header() {
                 onClick={() => setDropdown((d) => !d)}
               >
                 <img
-                  src={user?.avatar && user.avatar.startsWith('http') ? user.avatar : '/avatar-placeholder.png'}
+                  src={isClient && user?.avatar && user.avatar.startsWith('http') ? user.avatar : '/avatar-placeholder.png'}
                   alt="avatar"
                   className="w-8 h-8 rounded-full object-cover border"
                 />
-                <span className="font-medium text-gray-700">{user?.name || 'User'}</span>
+                <span className="font-medium text-gray-700">{isClient && user?.name ? user.name : 'User'}</span>
                 <ChevronDown className="text-gray-500 w-4 h-4" />
               </button>
               {dropdown && (

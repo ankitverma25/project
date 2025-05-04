@@ -1,25 +1,38 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export default function UserSettingsPage() {
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user')) : null;
-  const [name, setName] = useState(user?.name || '');
-  const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [isClient, setIsClient] = useState(false);
+  const [user, setUser] = useState(null);
+  const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [notif, setNotif] = useState(true);
 
+  useEffect(() => {
+    setIsClient(true);
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    setUser(storedUser);
+    setName(storedUser?.name || '');
+    setAvatar(storedUser?.avatar || '');
+  }, []);
+
   const handleNameChange = async (e) => {
     e.preventDefault();
     setError(''); setSuccess('');
+    const token = localStorage.getItem('token');
     try {
-      await axios.put(`http://localhost:8000/user/update/${user._id}`, { name });
+      await axios.put(`http://localhost:8000/user/update/${user._id}`, { name }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSuccess('Name updated!');
-      user.name = name;
-      localStorage.setItem('user', JSON.stringify(user));
+      const updatedUser = { ...user, name };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
       setError('Failed to update name');
     }
@@ -33,15 +46,17 @@ export default function UserSettingsPage() {
     formData.append('file', file);
     formData.append('upload_preset', 'ml_default');
 
-    console.log('FormData entries:', [...formData.entries()]);
-
     try {
       const res = await axios.post('https://api.cloudinary.com/v1_1/dylnn5dcz/image/upload', formData);
       const url = res.data.secure_url;
-      await axios.put(`http://localhost:8000/user/update/${user._id}`, { avatar: url });
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:8000/user/update/${user._id}`, { avatar: url }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setAvatar(url);
-      user.avatar = url;
-      localStorage.setItem('user', JSON.stringify(user));
+      const updatedUser = { ...user, avatar: url };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       setSuccess('Avatar updated!');
     } catch (err) {
       console.error('Cloudinary upload error:', err.response?.data || err.message);
@@ -53,8 +68,11 @@ export default function UserSettingsPage() {
     e.preventDefault();
     setError(''); setSuccess('');
     if (!password || !newPassword) return setError('Fill both fields');
+    const token = localStorage.getItem('token');
     try {
-      await axios.put(`http://localhost:8000/user/change-password/${user._id}`, { password, newPassword });
+      await axios.put(`http://localhost:8000/user/change-password/${user._id}`, { password, newPassword }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSuccess('Password changed!');
       setPassword(''); setNewPassword('');
     } catch {
@@ -72,7 +90,7 @@ export default function UserSettingsPage() {
     <main className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow mt-8">
       <h1 className="text-2xl font-bold mb-6">User Settings</h1>
       <div className="flex items-center gap-4 mb-6">
-        <img src={avatar || '/avatar-placeholder.png'} alt="avatar" className="w-16 h-16 rounded-full object-cover border" />
+        <img src={isClient && avatar ? avatar : '/avatar-placeholder.png'} alt="avatar" className="w-16 h-16 rounded-full object-cover border" />
         <div>
           <label className="block text-sm font-medium mb-1">Change Avatar</label>
           <input type="file" accept="image/*" onChange={handleAvatarChange} />

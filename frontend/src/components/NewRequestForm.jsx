@@ -87,7 +87,7 @@ export default function NewRequestForm({ formik, ownerId }) {
             ref={carModelInputRef}
             list="car-models"
             name="carModel"
-            value={formik.values.carModel}
+            value={formik.values.carModel || ''}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             className="w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
@@ -116,7 +116,7 @@ export default function NewRequestForm({ formik, ownerId }) {
             name="year"
             min="1980"
             max="2025"
-            value={formik.values.year}
+            value={formik.values.year || 2015}
             onChange={formik.handleChange}
             className="w-full accent-green-600"
           />
@@ -154,7 +154,7 @@ export default function NewRequestForm({ formik, ownerId }) {
         <input
           type="text"
           name="vehicleNumber"
-          value={formik.values.vehicleNumber}
+          value={formik.values.vehicleNumber || ''}
           onChange={formik.handleChange}
           onBlur={formik.handleBlur}
           className="w-full p-2.5 border rounded-lg"
@@ -185,7 +185,7 @@ export default function NewRequestForm({ formik, ownerId }) {
       {/* Description */}
       <div>
         <label className="block text-sm sm:text-base font-medium mb-2">Description</label>
-        <textarea name="description" value={formik.values.description} onChange={formik.handleChange} className="w-full p-2.5 border rounded-lg" />
+        <textarea name="description" value={formik.values.description || ''} onChange={formik.handleChange} className="w-full p-2.5 border rounded-lg" />
         {formik.touched.description && formik.errors.description && (
           <div className="text-red-500 text-xs mt-1">{formik.errors.description}</div>
         )}
@@ -193,7 +193,7 @@ export default function NewRequestForm({ formik, ownerId }) {
       {/* Fuel Type */}
       <div>
         <label className="block text-sm sm:text-base font-medium mb-2">Fuel Type</label>
-        <select name="fuelType" value={formik.values.fuelType} onChange={formik.handleChange} className="w-full p-2.5 border rounded-lg">
+        <select name="fuelType" value={formik.values.fuelType || ''} onChange={formik.handleChange} className="w-full p-2.5 border rounded-lg">
           <option value="">Select Fuel Type</option>
           <option value="petrol">Petrol</option>
           <option value="diesel">Diesel</option>
@@ -218,7 +218,7 @@ export default function NewRequestForm({ formik, ownerId }) {
           <input
             type="text"
             name="state"
-            value={formik.values.state}
+            value={formik.values.state || ''}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             className="w-full p-2.5 border rounded-lg"
@@ -234,7 +234,7 @@ export default function NewRequestForm({ formik, ownerId }) {
           <input
             type="text"
             name="city"
-            value={formik.values.city}
+            value={formik.values.city || ''}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             className="w-full p-2.5 border rounded-lg"
@@ -250,7 +250,7 @@ export default function NewRequestForm({ formik, ownerId }) {
           <input
             type="text"
             name="pincode"
-            value={formik.values.pincode}
+            value={formik.values.pincode || ''}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             className="w-full p-2.5 border rounded-lg"
@@ -271,7 +271,7 @@ export default function NewRequestForm({ formik, ownerId }) {
               <input
                 type="date"
                 name="pickupDate"
-                value={formik.values.pickupDate}
+                value={formik.values.pickupDate || ''}
                 onChange={formik.handleChange}
                 className="w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
               />
@@ -286,7 +286,7 @@ export default function NewRequestForm({ formik, ownerId }) {
             <div className="relative">
               <select
                 name="timeSlot"
-                value={formik.values.timeSlot}
+                value={formik.values.timeSlot || ''}
                 onChange={formik.handleChange}
                 className="w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base appearance-none"
               >
