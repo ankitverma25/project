@@ -4,8 +4,11 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff } from 'lucide-react';
 import Backbar from "@/components/Backbar";
 import axios from 'axios';
+import { useRouter } from "next/navigation";
+import toast from 'react-hot-toast';
 
 const Login = () => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -15,9 +18,11 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
-      alert('Email and password are required');
+      toast.error('Email and password are required');
       return;
     }
+    
+    const loadingToast = toast.loading('Logging in...');
     try {
       const response = await axios.post('http://localhost:8000/user/login', {
         email: formData.email,
@@ -26,14 +31,12 @@ const Login = () => {
       // Store token and user in localStorage
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      alert('Login successful!');
-      // Redirect or update UI as needed
+      toast.success('Login successful!', { id: loadingToast });
+      // Redirect to user dashboard
+      router.push('/user/dashboard');
     } catch (err) {
-      if (err.response && err.response.data) {
-        alert(err.response.data.message || JSON.stringify(err.response.data));
-      } else {
-        alert('Login failed');
-      }
+      const errorMessage = err.response?.data?.message || 'Login failed';
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 

@@ -5,7 +5,6 @@ import connectDb from '../DB/connectDb.js';
 dotenv.config();
 
 
-console.log(process.env.DB_URL);
 
 connectDb().then(() => {
     app.on('error', (err) => {

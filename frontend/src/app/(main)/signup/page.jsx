@@ -6,6 +6,7 @@ import FloatingLabelInput from "@/components/FloatingLabelInput";
 import Backbar from '@/components/Backbar';
 import Link from 'next/link';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const Sign = () => {
   const [formData, setFormData] = useState({
@@ -31,13 +32,15 @@ const Sign = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     if (!formData.fullName || !formData.email || !formData.phone || !formData.password) {
-      alert('All fields are required');
+      toast.error('All fields are required');
       return;
     }
+
+    const loadingToast = toast.loading('Creating your account...');
     try {
       const response = await axios.post('http://localhost:8000/user/add', {
         name: formData.fullName,
@@ -45,6 +48,7 @@ const Sign = () => {
         phone: formData.phone,
         password: formData.password,
       });
+      toast.success('Account created successfully!', { id: loadingToast });
       setShowSuccess(true);
       setFormData({
         fullName: '',
@@ -54,11 +58,8 @@ const Sign = () => {
         confirmPassword: '',
       });
     } catch (err) {
-      if (err.response && err.response.data) {
-        alert(err.response.data.message || JSON.stringify(err.response.data));
-      } else {
-        alert('Signup failed');
-      }
+      const errorMessage = err.response?.data?.message || 'Signup failed';
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 

@@ -31,6 +31,21 @@ const dealerSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Bid' 
   }], // Dealer ke saare bids
+  // Profile insights fields
+  rating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  totalDeals: {
+    type: Number,
+    default: 0
+  },
+  avgResponseTime: {
+    type: Number, // in hours
+    default: 0
+  },
   createdAt: { 
     type: Date, 
     default: Date.now 

@@ -1,5 +1,17 @@
 import mongoose from "mongoose";
 
+const documentSchema = new mongoose.Schema({
+  url: String,
+  status: {
+    type: String,
+    enum: ['pending', 'verified', 'rejected'],
+    default: 'pending'
+  },
+  uploadedAt: Date,
+  verifiedAt: Date,
+  notes: String
+});
+
 const carSchema = new mongoose.Schema({
   owner: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -41,6 +53,7 @@ const carSchema = new mongoose.Schema({
     required: [true, "enter the vehicle number"]
   },
   address: {
+    fullAddress: { type: String, required: [true, "enter the full address"] },
     state: { type: String, required: [true, "enter the state"] },
     city: { type: String, required: [true, "enter the city"] },
     pincode: { type: String, required: [true, "enter the pincode"] }
@@ -61,11 +74,45 @@ const carSchema = new mongoose.Schema({
     default: "open" 
   },// Bidding open/closed
   
+  documents: {
+    rc: documentSchema,
+    insurance: documentSchema,
+    pollution: documentSchema,
+    fitness: {
+      url: String,
+      status: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected', 'not-required'],
+        default: 'not-required'
+      },
+      uploadedAt: Date,
+      verifiedAt: Date,
+      notes: String,
+      required: Boolean
+    }
+  },
+
   bids: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Bid' 
   }],
 },{ timestamps: true });
+
+// Add method to check if fitness certificate is required
+carSchema.methods.isFitnessRequired = function() {
+  const currentYear = new Date().getFullYear();
+  return (currentYear - this.year) > 15;
+};
+
+// Add pre-save middleware to update fitness certificate requirement
+carSchema.pre('save', function(next) {
+  if (this.isModified('year')) {
+    const fitnessRequired = this.isFitnessRequired();
+    this.documents.fitness.required = fitnessRequired;
+    this.documents.fitness.status = fitnessRequired ? 'pending' : 'not-required';
+  }
+  next();
+});
 
 const Car = mongoose.model("Car", carSchema);
 

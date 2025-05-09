@@ -3,13 +3,12 @@ import { useState } from "react";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function AdminSignupPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const router = useRouter();
 
   const handleChange = (e) => {
@@ -18,17 +17,15 @@ export default function AdminSignupPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     setLoading(true);
+    const loadingToast = toast.loading('Creating admin account...');
     try {
       await axios.post("http://localhost:8000/admin/signup", form);
-      setSuccess("Admin registered successfully! Please login.");
+      toast.success('Admin registered successfully!', { id: loadingToast });
       setTimeout(() => router.push("/admin_login"), 1500);
     } catch (err) {
-      setError(
-        err.response?.data?.message || err.message || "Signup failed. Try again."
-      );
+      const errorMessage = err.response?.data?.message || err.message || "Signup failed";
+      toast.error(errorMessage, { id: loadingToast });
     }
     setLoading(false);
   };
@@ -88,8 +85,6 @@ export default function AdminSignupPage() {
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
-        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-        {success && <div className="text-green-600 text-sm text-center">{success}</div>}
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-lg shadow mt-2"

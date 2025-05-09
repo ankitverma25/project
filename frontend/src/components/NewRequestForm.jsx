@@ -12,22 +12,21 @@ export default function NewRequestForm({ formik, ownerId }) {
   const [aiPrice, setAiPrice] = useState(null);
   const carModelInputRef = useRef();
 
-  const getConditionString = (num) => {
-    if (num >= 5) return 'excellent';
-    if (num >= 3) return 'good';
-    return 'poor';
-  };
-
-  const handleAIEstimate = (e) => {
+  const handleAIEstimate = async (e) => {
     e.preventDefault();
-    // Simple mock: base + year + condition
-    let base = 50000;
-    let year = parseInt(formik.values.year) || 2015;
-    let age = new Date().getFullYear() - year;
-    let cond = formik.values.condition;
-    let condFactor = cond === 'excellent' ? 1 : cond === 'good' ? 0.8 : 0.5;
-    let price = Math.max(10000, Math.round(base * condFactor - age * 2000));
-    setAiPrice(price);
+    setError('');
+    try {
+      const response = await axios.post('http://localhost:8000/ai/estimate', {
+        model: formik.values.carModel,
+        year: formik.values.year,
+        condition: formik.values.condition,
+        fuelType: formik.values.fuelType,
+        mileage: formik.values.mileage
+      });
+      setAiPrice(response.data.estimatedValue);
+    } catch (err) {
+      setError('Failed to get AI estimation: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -46,9 +45,10 @@ export default function NewRequestForm({ formik, ownerId }) {
       formData.append('year', formik.values.year);
       formData.append('description', formik.values.description);
       formData.append('fuelType', formik.values.fuelType);
-      formData.append('condition', getConditionString(formik.values.condition));
+      formData.append('condition', formik.values.condition);
       if (formik.values.mileage) formData.append('mileage', formik.values.mileage);
       formData.append('vehicleNumber', formik.values.vehicleNumber);
+      formData.append('address[fullAddress]', formik.values.fullAddress);
       formData.append('address[state]', formik.values.state);
       formData.append('address[city]', formik.values.city);
       formData.append('address[pincode]', formik.values.pincode);
@@ -212,12 +212,28 @@ export default function NewRequestForm({ formik, ownerId }) {
         )}
       </div>
       {/* Address Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="md:col-span-2">
+          <label className="block text-sm sm:text-base font-medium mb-1">Full Address <span className="text-red-500">*</span></label>
+          <textarea
+            name="fullAddress"
+            value={formik.values.fullAddress || ''}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            className="w-full p-2.5 border rounded-lg"
+            placeholder="House No, Street, Area, Landmark, etc."
+            required
+          />
+          {formik.touched.fullAddress && formik.errors.fullAddress && (
+            <div className="text-red-500 text-xs mt-1">{formik.errors.fullAddress}</div>
+          )}
+        </div>
         <div>
           <label className="block text-sm sm:text-base font-medium mb-1">State <span className="text-red-500">*</span></label>
           <input
             type="text"
             name="state"
+            list="state-list"
             value={formik.values.state || ''}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -225,6 +241,18 @@ export default function NewRequestForm({ formik, ownerId }) {
             placeholder="State"
             required
           />
+          <datalist id="state-list">
+            <option value="Uttar Pradesh" />
+            <option value="Delhi" />
+            <option value="Maharashtra" />
+            <option value="Bihar" />
+            <option value="Madhya Pradesh" />
+            <option value="Rajasthan" />
+            <option value="Punjab" />
+            <option value="Gujarat" />
+            <option value="Karnataka" />
+            <option value="Other" />
+          </datalist>
           {formik.touched.state && formik.errors.state && (
             <div className="text-red-500 text-xs mt-1">{formik.errors.state}</div>
           )}

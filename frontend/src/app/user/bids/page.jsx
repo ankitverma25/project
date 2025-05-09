@@ -1,6 +1,8 @@
 'use client'
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Star, MapPin, User, Phone, FileText, Calendar, BadgeCheck, X } from "lucide-react";
+import toast from 'react-hot-toast';
 
 export default function UserBidsPage() {
   const [userCars, setUserCars] = useState([]);
@@ -11,6 +13,7 @@ export default function UserBidsPage() {
   const [sortOption, setSortOption] = useState('newest');
   const [selectedBids, setSelectedBids] = useState([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  const [acceptingBidId, setAcceptingBidId] = useState("");
 
   useEffect(() => {
     let userId = '';
@@ -59,12 +62,160 @@ export default function UserBidsPage() {
     );
   };
 
+  // Accept bid handler
+  const handleAcceptBid = async (bidId, carId) => {
+    const loadingToast = toast.loading('Accepting bid...');
+    setAcceptingBidId(bidId);
+    let token = '';
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('token') || '';
+    }
+    try {
+      const response = await axios.post(`http://localhost:8000/bid/accept/${bidId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update UI to reflect changes
+      setCarBids(prev => ({
+        ...prev,
+        [carId]: prev[carId].map(bid => ({
+          ...bid,
+          isAccepted: bid._id === bidId
+        }))
+      }));
+
+      // Update car status in UI
+      setUserCars(prev => 
+        prev.map(car => 
+          car._id === carId ? { ...car, status: 'closed' } : car
+        )
+      );
+
+      toast.success('Bid accepted successfully!', { id: loadingToast });
+
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to accept bid';
+      toast.error(errorMessage, { id: loadingToast });
+    } finally {
+      setAcceptingBidId("");
+    }
+  };
+
+  // Helper to get selected bid objects (max 3)
+  const getSelectedBidObjects = () => {
+    const allBids = Object.values(carBids).flat();
+    return allBids.filter(bid => selectedBids.includes(bid._id)).slice(0, 3);
+  };
+
+  // Helper to render star rating
+  const renderStars = (rating = 0) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <Star key={i} size={18} className={i <= rating ? 'text-yellow-400 inline' : 'text-gray-300 inline'} fill={i <= rating ? '#facc15' : 'none'} />
+      );
+    }
+    return stars;
+  };
+
   if (loading) return <div className="p-8 text-center">Loading car details...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!userCars.length) return <div className="p-8 text-center text-gray-500">No car requests found for your account.</div>;
 
   return (
     <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+      {/* Bid Comparison Modal */}
+      {showCompareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-2">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl relative overflow-y-auto max-h-[90vh]">
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl"
+              onClick={() => setShowCompareModal(false)}
+              aria-label="Close"
+            >
+              <X size={28} />
+            </button>
+            <h2 className="text-2xl font-bold mb-6 text-center flex items-center justify-center gap-2"><BadgeCheck className="text-blue-600" size={28}/>Bid Comparison</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-y-2">
+                <thead>
+                  <tr>
+                    <th className="text-left text-gray-600 font-semibold p-2">Field</th>
+                    {getSelectedBidObjects().map((bid, idx) => (
+                      <th key={bid._id} className="text-center text-blue-700 font-bold p-2">Bid {idx + 1}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><User size={18}/>Dealer</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2">
+                        <div className="flex flex-col items-center">
+                          <img src={bid.dealer?.avatar || "/avatar-placeholder.png"} alt={bid.dealer?.name || "Dealer"} className="w-12 h-12 rounded-full object-cover mb-1" />
+                          <span className="font-semibold text-gray-800">{bid.dealer?.name || "Dealer"}</span>
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><Star size={18}/>Rating</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2">
+                        <div className="flex items-center justify-center gap-1">
+                          {renderStars(Math.round(bid.dealer?.rating || 0))}
+                          <span className="ml-1 text-sm text-gray-600">{bid.dealer?.rating || '-'}</span>
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><MapPin size={18}/>Location</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2">{bid.dealer?.location || '-'}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><FileText size={18}/>Bid Amount</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2 text-lg font-bold text-blue-700">₹{bid.amount}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><Calendar size={18}/>Date</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2">{new Date(bid.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><BadgeCheck size={18}/>Status</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${bid.isAccepted ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{bid.isAccepted ? 'Accepted' : 'Pending'}</span>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><FileText size={18}/>Description</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2 text-sm text-gray-700">{bid.notes || '-'}</td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="font-medium text-gray-700 p-2 flex items-center gap-2"><Phone size={18}/>Contact</td>
+                    {getSelectedBidObjects().map(bid => (
+                      <td key={bid._id} className="text-center p-2 text-sm text-blue-600">{bid.dealer?.contact || '-'}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+              {getSelectedBidObjects().length === 0 && (
+                <div className="text-center text-gray-500 py-8">No bids selected for comparison.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 xl:gap-14 max-w-7xl mx-auto">
         {/* Left column - Vehicle details and bids */}
         <div className="lg:w-2/3 w-full">
@@ -77,8 +228,6 @@ export default function UserBidsPage() {
               if (sortOption === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
               return 0;
             });
-            const highestBid = Math.max(...bids.map(bid => bid.amount), 0);
-            const averageBid = bids.length ? (bids.reduce((sum, bid) => sum + bid.amount, 0) / bids.length).toFixed(2) : 0;
 
             return (
               <div key={car._id} className="mb-10">
@@ -113,12 +262,12 @@ export default function UserBidsPage() {
                           <p className="font-medium text-sm sm:text-base">{car.mileage || 'N/A'}</p>
                         </div>
                         <div>
-                          <p className="text-xs sm:text-sm text-gray-500">Last Serviced</p>
-                          <p className="font-medium text-sm sm:text-base">{car.lastServiced || 'N/A'}</p>
+                          <p className="text-xs sm:text-sm text-gray-500">Fuel Type</p>
+                          <p className="font-medium text-sm sm:text-base">{car.fuelType || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-xs sm:text-sm text-gray-500">Location</p>
-                          <p className="font-medium text-sm sm:text-base">{car.location || 'N/A'}</p>
+                          <p className="font-medium text-sm sm:text-base">{car.address?.city || 'N/A'}</p>
                         </div>
                       </div>
                       <div className="mt-4">
@@ -225,9 +374,6 @@ export default function UserBidsPage() {
                       <div className="md:w-1/4 mb-3 md:mb-0">
                         <p className="text-xs sm:text-sm text-gray-500">Bid Amount</p>
                         <p className="text-lg sm:text-xl font-bold text-gray-800">₹{bid.amount}</p>
-                        {bid.amount === highestBid && (
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Highest Bid</span>
-                        )}
                       </div>
                       <div className="md:w-1/4 mb-3 md:mb-0">
                         <p className="text-xs sm:text-sm text-gray-500">Date</p>
@@ -238,6 +384,27 @@ export default function UserBidsPage() {
                         <button className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center cursor-pointer" onClick={() => console.log('Show bid details')}>
                           <i className="fas fa-info-circle mr-1.5"></i>Details
                         </button>
+                        {/* Accept Bid Button or Sold Badge */}
+                        {car.status === 'closed' ? (
+                          bid.isAccepted ? (
+                            <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs sm:text-sm font-medium flex items-center">
+                              <BadgeCheck className="w-4 h-4 mr-1" />
+                              Accepted
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs sm:text-sm font-medium">
+                              Bidding Closed
+                            </span>
+                          )
+                        ) : (
+                          <button
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700 flex items-center cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                            onClick={() => handleAcceptBid(bid._id, car._id)}
+                            disabled={acceptingBidId === bid._id}
+                          >
+                            {acceptingBidId === bid._id ? 'Accepting...' : 'Accept Bid'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

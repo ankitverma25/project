@@ -22,7 +22,7 @@ export default function UserSidebar() {
         <ul className="space-y-1 p-2">
           {userLinks.map(link => (
             <li key={link.href}>
-              <Link href={link.href} className="block px-4 py-2 rounded hover:bg-emerald-100 text-gray-700 font-medium transition flex items-center gap-2">
+              <Link href={link.href} className="px-4 py-2 rounded hover:bg-emerald-100 text-gray-700 font-medium transition flex items-center gap-2">
                 {link.icon && <link.icon className="w-5 h-5" />} {link.label}
               </Link>
             </li>

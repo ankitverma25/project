@@ -3,6 +3,7 @@ import { useState } from "react";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function AdminLoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -19,15 +20,17 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const loadingToast = toast.loading('Logging in...');
     try {
       const res = await axios.post("http://localhost:8000/admin/login", form);
       localStorage.setItem("admin_token", res.data.token);
       localStorage.setItem("admin", JSON.stringify(res.data.admin));
+      toast.success('Login successful!', { id: loadingToast });
       router.push("/admin/dashboard");
     } catch (err) {
-      setError(
-        err.response?.data?.message || err.message || "Login failed. Try again."
-      );
+      const errorMessage = err.response?.data?.message || err.message || "Login failed. Try again.";
+      toast.error(errorMessage, { id: loadingToast });
+      setError(errorMessage);
     }
     setLoading(false);
   };

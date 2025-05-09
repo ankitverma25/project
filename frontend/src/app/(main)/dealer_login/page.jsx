@@ -3,6 +3,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import toast from "react-hot-toast";
 
 export default function DealerLoginPage() {
   const [loading, setLoading] = useState(false);
@@ -19,18 +20,17 @@ export default function DealerLoginPage() {
     }),
     onSubmit: async (values) => {
       setError("");
-      setLoading(true);
+      const loadingToast = toast.loading('Logging in...');
       try {
         const res = await axios.post("http://localhost:8000/dealer/login", values);
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("dealer", JSON.stringify(res.data.dealer));
+        toast.success('Login successful!', { id: loadingToast });
         window.location.href = "/dealer/dashboard";
       } catch (err) {
-        setError(
-          err.response?.data?.message || err.message || "Login failed. Try again."
-        );
+        const errorMessage = err.response?.data?.message || 'Login failed';
+        toast.error(errorMessage, { id: loadingToast });
       }
-      setLoading(false);
     },
   });
 
