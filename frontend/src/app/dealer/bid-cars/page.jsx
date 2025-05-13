@@ -37,8 +37,8 @@ export default function DealerBidCarsPage() {
         const allCars = carRes.data;
         const myBids = bidRes.data.filter((bid) => bid.dealer && bid.dealer._id === dealer._id);
         const carsBidOn = new Set(myBids.map((bid) => bid.car._id));
-        // Only show cars the dealer has NOT bid on
-        setCars(allCars.filter(car => !carsBidOn.has(car._id)));
+        // Only show cars the dealer has NOT bid on AND that are open for bidding
+        setCars(allCars.filter(car => !carsBidOn.has(car._id) && car.status === "open"));
       })
       .catch(() => setError("Failed to load cars"))
       .finally(() => setLoading(false));
@@ -48,14 +48,19 @@ export default function DealerBidCarsPage() {
     if (!bidAmount[carId] || isNaN(Number(bidAmount[carId]))) return;
     setPlacingBid(carId);
     setSuccessMsg("");
+    setError("");
     try {
       await axios.post("http://localhost:8000/bid/add", { car: carId, amount: bidAmount[carId] }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSuccessMsg("Bid placed successfully!");
       setCars((prev) => prev.filter((car) => car._id !== carId));
-    } catch {
-      setError("Failed to place bid");
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Failed to place bid");
+      }
     }
     setPlacingBid("");
   };

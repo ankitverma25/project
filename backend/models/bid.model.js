@@ -11,15 +11,15 @@ const bidSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Dealer', 
     required: [true, "Dealer ka ID dalna zaroori hai"] 
-  },
-  amount: { 
+  },  amount: { 
     type: Number, 
     required: [true, "Bid amount dalna zaroori hai"] 
   }, // ₹ mein
-  isAccepted: { 
-    type: Boolean, 
-    default: false 
-  }, // Owner ne accept kiya?
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: 'pending'
+  },
   createdAt: { 
     type: Date, 
     default: Date.now 

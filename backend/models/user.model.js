@@ -15,14 +15,10 @@ const userSchema=new mongoose.Schema({
       password: { 
         type: String, 
         required: [true, "Password dalna zaroori hai"] 
-      },
-      phone: { 
+      },      phone: { 
         type: String, 
         required: [true, "Phone number dalna zaroori hai"] 
       },
-      aadharCard: { 
-        type: String, 
-      }, // Aadhar ka PDF/Image URL (Cloud se)
       avatar: { 
         type: String 
       }, // Profile photo URL

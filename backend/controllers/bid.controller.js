@@ -1,6 +1,7 @@
 import Bid from '../models/bid.model.js';
 import Car from '../models/car.model.js';
 import Dealer from '../models/dealer.model.js';
+import mongoose from 'mongoose';
 
 // Get all bids (for admin or debugging)
 const getAllBids = async (req, res) => {
@@ -17,7 +18,15 @@ const getBidsForCar = async (req, res) => {
   try {
     const carId = req.params.carId;
     const bids = await Bid.find({ car: carId }).populate('dealer');
-    res.status(200).json(bids);
+    
+    // Map status to isAccepted and isRejected flags for frontend
+    const mappedBids = bids.map(bid => ({
+      ...bid.toObject(),
+      isAccepted: bid.status === 'accepted',
+      isRejected: bid.status === 'rejected'
+    }));
+    
+    res.status(200).json(mappedBids);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch bids for car', error: err });
   }
@@ -31,15 +40,87 @@ const addBid = async (req, res) => {
     // Check car exists
     const carDoc = await Car.findById(car);
     if (!carDoc) return res.status(404).json({ message: 'Car not found' });
+    
+    // Check if car is not closed
+    if (carDoc.status === 'closed') {
+      return res.status(400).json({ message: 'This car is no longer accepting bids' });
+    }
+    
     // Create bid
-    const bid = new Bid({ car, dealer: dealerId, amount });
+    const bid = new Bid({ car, dealer: dealerId, amount, status: 'pending' });
     await bid.save();
+    
     // Add bid to dealer's myBids
     await Dealer.findByIdAndUpdate(dealerId, { $push: { myBids: bid._id } });
-    res.status(201).json({ message: 'Bid placed successfully', bid });
+    
+    res.status(201).json({ success: true, message: 'Bid placed successfully', bid });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to place bid', error: err });
+    res.status(500).json({ success: false, message: 'Failed to place bid', error: err.message });
   }
 };
 
-export { getAllBids, getBidsForCar, addBid };
+// Accept a bid (car owner only)
+const acceptBid = async (req, res) => {
+  try {
+    const { bidId } = req.params;
+    const { carId } = req.body;
+
+    // Find bid and car
+    const bid = await Bid.findById(bidId);
+    const car = await Car.findById(carId);
+
+    if (!bid) {
+      return res.status(404).json({ success: false, message: 'Bid not found' });
+    }
+    if (!car) {
+      return res.status(404).json({ success: false, message: 'Car not found' });
+    }
+
+    // Check if car is already closed
+    if (car.status === 'closed') {
+      return res.status(400).json({ success: false, message: 'This car already has an accepted bid' });
+    }
+
+    // Start a session for transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Update the accepted bid status
+      await Bid.findByIdAndUpdate(bidId, 
+        { status: 'accepted' }, 
+        { session }
+      );
+
+      // Update all other bids for this car to rejected
+      await Bid.updateMany(
+        { car: carId, _id: { $ne: bidId } },
+        { status: 'rejected' },
+        { session }
+      );
+
+      // Close the car for further bidding
+      await Car.findByIdAndUpdate(carId, 
+        { status: 'closed' },
+        { session }
+      );
+
+      await session.commitTransaction();
+      
+      res.status(200).json({
+        success: true,
+        message: 'Bid accepted successfully'
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  } catch (err) {
+    console.error('Error accepting bid:', err);
+    res.status(500).json({ success: false, message: 'Failed to accept bid' });
+  }
+};
+
+export { getAllBids, getBidsForCar, addBid, acceptBid };

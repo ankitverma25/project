@@ -1,5 +1,23 @@
 import mongoose from "mongoose";
 
+// Document Schema for tracking document status and verification
+const documentSchema = new mongoose.Schema({
+  url: { type: String },
+  status: {
+    type: String,
+    enum: ['pending', 'verified', 'rejected'],
+    default: 'pending'
+  },
+  uploadedAt: { type: Date },
+  verifiedAt: { type: Date },
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Dealer'
+  },
+  rejectionMessage: { type: String },
+  notes: { type: String }
+});
+
 const carSchema = new mongoose.Schema({
   owner: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -39,14 +57,34 @@ const carSchema = new mongoose.Schema({
   vehicleNumber: {
     type: String,
     required: [true, "enter the vehicle number"]
-  },
-  address: {
+  },  address: {
     state: { type: String, required: [true, "enter the state"] },
     city: { type: String, required: [true, "enter the city"] },
     pincode: { type: String, required: [true, "enter the pincode"] }
   },
+  documents: {
+    idProof: documentSchema,
+    insurance: documentSchema,
+    pollution: documentSchema,
+    addressProof: documentSchema
+  },
 
-  condition: { 
+  documentFormStatus: {
+    isSubmitted: { 
+      type: Boolean, 
+      default: false 
+    },
+    submittedAt: Date,
+    lastUpdatedAt: Date
+  },
+
+  documentStatus: {
+    type: String,
+    enum: ['pending', 'verifying', 'verified', 'rejected'],
+    default: 'pending'
+  },
+
+  condition: {
     type: String, 
     enum: ["excellent", "good", "poor"], 
     default: "good" 

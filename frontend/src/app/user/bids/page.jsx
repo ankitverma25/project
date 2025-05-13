@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 export default function UserBidsPage() {
   const [userCars, setUserCars] = useState([]);
@@ -11,6 +12,19 @@ export default function UserBidsPage() {
   const [sortOption, setSortOption] = useState('newest');
   const [selectedBids, setSelectedBids] = useState([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
+
+  // Function to fetch bids for a specific car
+  const fetchBidsForCar = async (carId, token) => {
+    try {
+      const bidRes = await axios.get(`http://localhost:8000/bid/car/${carId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return bidRes.data;
+    } catch (error) {
+      console.error(`Error fetching bids for car ${carId}:`, error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     let userId = '';
@@ -27,31 +41,113 @@ export default function UserBidsPage() {
       setLoading(false);
       return;
     }
-    axios.get('http://localhost:8000/car/allCars', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(async res => {
+
+    const loadData = async () => {
+      try {
+        const res = await axios.get('http://localhost:8000/car/allCars', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         const cars = res.data.filter(car => car.owner && (car.owner._id === userId || car.owner === userId));
         setUserCars(cars);
+
         // Fetch bids for each car
         const bidsObj = {};
         await Promise.all(
           cars.map(async (car) => {
-            try {
-              const bidRes = await axios.get(`http://localhost:8000/bid/car/${car._id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              bidsObj[car._id] = bidRes.data;
-            } catch {
-              bidsObj[car._id] = [];
-            }
+            bidsObj[car._id] = await fetchBidsForCar(car._id, token);
           })
         );
+
+        // After fetching, if any bid is accepted, mark all others as rejected (for UI)
+        Object.keys(bidsObj).forEach(carId => {
+          const carBidsArr = bidsObj[carId] || [];
+          const acceptedBid = carBidsArr.find(bid => bid.status === 'accepted');
+          if (acceptedBid) {
+            bidsObj[carId] = carBidsArr.map(bid =>
+              bid._id === acceptedBid._id
+                ? { ...bid, status: 'accepted', _showAccepted: true }
+                : { ...bid, status: 'rejected', _showAccepted: false }
+            );
+          }
+        });
         setCarBids(bidsObj);
-      })
-      .catch(() => setError('Failed to load car details'))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        setError('Failed to load car details');
+        toast.error('Failed to load car details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
+  const handleAcceptBid = async (bidId, carId) => {
+    const currentBids = carBids[carId] || [];
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Authentication required');
+        return;
+      }
+
+      // Optimistically update UI first
+      setCarBids(prev => ({
+        ...prev,
+        [carId]: currentBids.map(bid => ({
+          ...bid,
+          status: bid._id === bidId ? 'accepted' : 'pending'
+        }))
+      }));
+
+      const response = await axios.post(
+        `http://localhost:8000/bid/${bidId}/accept`,
+        { carId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        // Update UI after successful acceptance
+        const updatedBids = currentBids.map(bid => ({
+          ...bid,
+          status: bid._id === bidId ? 'accepted' : 'rejected'
+        }));
+
+        setCarBids(prev => ({
+          ...prev,
+          [carId]: updatedBids
+        }));
+
+        // Update car status to closed in the UI
+        setUserCars(prev => prev.map(car => 
+          car._id === carId 
+            ? { ...car, status: 'closed' }
+            : car
+        ));
+
+        toast.success('Bid accepted successfully');
+      } else {
+        // If backend fails, revert the changes
+        setCarBids(prev => ({
+          ...prev,
+          [carId]: currentBids
+        }));
+        toast.error(response.data.message || 'Failed to accept bid');
+      }
+    } catch (error) {
+      console.error('Error accepting bid:', error);
+      // Revert changes on error
+      setCarBids(prev => ({
+        ...prev,
+        [carId]: currentBids
+      }));
+      
+      if (error.response?.status === 400 && error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to accept bid. Please try again.');
+      }
+    }
+  };
 
   const toggleBidSelection = (bidId) => {
     setSelectedBids((prev) =>
@@ -68,8 +164,17 @@ export default function UserBidsPage() {
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 xl:gap-14 max-w-7xl mx-auto">
         {/* Left column - Vehicle details and bids */}
         <div className="lg:w-2/3 w-full">
-          {userCars.map(car => {
-            const bids = carBids[car._id] || [];
+          {userCars.map(car => {            let bids = carBids[car._id] || [];
+              // Filter bids based on status
+            if (activeBidFilter !== 'all') {
+              bids = bids.filter(bid => {
+                if (activeBidFilter === 'pending') {
+                  return !bid.status || bid.status === 'pending';
+                }
+                return bid.status === activeBidFilter;
+              });
+            }
+
             const sortedBids = [...bids].sort((a, b) => {
               if (sortOption === 'highest') return b.amount - a.amount;
               if (sortOption === 'lowest') return a.amount - b.amount;
@@ -228,17 +333,52 @@ export default function UserBidsPage() {
                         {bid.amount === highestBid && (
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Highest Bid</span>
                         )}
-                      </div>
-                      <div className="md:w-1/4 mb-3 md:mb-0">
+                      </div>                      <div className="md:w-1/4 mb-3 md:mb-0">
                         <p className="text-xs sm:text-sm text-gray-500">Date</p>
                         <p className="font-medium text-sm sm:text-base">{new Date(bid.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                         <p className="text-xs sm:text-sm text-gray-500">{bid.dealer?.location || "-"}</p>
-                      </div>
-                      <div className="md:w-1/4 flex flex-wrap gap-2 justify-end">
-                        <button className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center cursor-pointer" onClick={() => console.log('Show bid details')}>
-                          <i className="fas fa-info-circle mr-1.5"></i>Details
-                        </button>
-                      </div>
+                      </div>                      <div className="md:w-1/4 flex flex-wrap gap-2 justify-end">  {/* Accept button: show for pending bids if car is open and no bid is accepted */}
+  {(!bids.some(b => b.status === 'accepted')) && (!bid.status || bid.status === 'pending') && car.status !== 'closed' && !car.isSold && (
+    <button
+      onClick={() => handleAcceptBid(bid._id, car._id)}
+      className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-600 flex items-center gap-2"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+      </svg>
+      <span>Accept Bid</span>
+    </button>
+  )}
+  {/* Accepted badge */}
+  {bid.status === 'accepted' && (
+    <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+      Accepted
+    </span>
+  )}
+  {/* Bidding Closed for all other bids after one is accepted */}
+  {(bids.some(b => b.status === 'accepted') && bid.status !== 'accepted') && (
+    <span className="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+      </svg>
+      Bidding Closed
+    </span>
+  )}
+  {/* Details button (unchanged) */}
+  <button 
+    className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2" 
+    onClick={() => console.log('Show bid details')}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+    </svg>
+    Details
+  </button>
+</div>
                     </div>
                   ))}
                 </div>
