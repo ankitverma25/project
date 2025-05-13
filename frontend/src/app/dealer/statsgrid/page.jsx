@@ -2,7 +2,7 @@
 'use client'
 import React from 'react'
 
-import { IndianRupee, Package, Clock, TrendingUp } from 'lucide-react'
+import { IndianRupee, FileText, Clock, TrendingUp } from 'lucide-react'
 
 export default function StatsGrid() {
   const stats = [
@@ -13,16 +13,16 @@ export default function StatsGrid() {
       change: "+12.5% from last month"
     },
     { 
-      title: "Active Inventory", 
-      value: "1,250 kg", 
-      icon: <Package className="h-6 w-6" />,
-      change: "+200 kg this week"
+      title: "Documents", 
+      value: "15", 
+      icon: <FileText className="h-6 w-6" />,
+      change: "3 new this week"
     },
     { 
       title: "Pending Bids", 
-      value: "15", 
+      value: "8", 
       icon: <Clock className="h-6 w-6" />,
-      change: "3 new today"
+      change: "2 new today"
     },
     { 
       title: "Monthly Growth", 
@@ -33,19 +33,19 @@ export default function StatsGrid() {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => (
-        <div key={index} className="bg-white p-4 rounded-lg shadow">
+        <div key={index} className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">{stat.title}</p>
-              <p className="text-2xl font-semibold mt-1">{stat.value}</p>
-              <p className="text-xs text-green-600 mt-2">{stat.change}</p>
+              <p className="text-gray-500 text-sm">{stat.title}</p>
+              <p className="text-2xl font-bold mt-1">{stat.value}</p>
             </div>
-            <div className="bg-blue-100 p-3 rounded-full">
+            <div className="bg-blue-50 p-3 rounded-full">
               {stat.icon}
             </div>
           </div>
+          <p className="text-sm text-gray-600 mt-2">{stat.change}</p>
         </div>
       ))}
     </div>

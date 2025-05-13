@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Eye } from 'lucide-react';
+import CarDetailsModal from '@/components/dealer/CarDetailsModal';
 
 export default function DealerBidCarsPage() {
   const [cars, setCars] = useState([]);
@@ -11,6 +13,7 @@ export default function DealerBidCarsPage() {
   const [bidAmount, setBidAmount] = useState({});
   const [placingBid, setPlacingBid] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [selectedCar, setSelectedCar] = useState(null);
 
   useEffect(() => {
     let dealer = null;
@@ -85,7 +88,7 @@ export default function DealerBidCarsPage() {
               <div className="text-gray-500 text-sm mb-1">Fuel: {car.fuelType}</div>
               <div className="text-gray-500 text-sm mb-1">Description: {car.description}</div>
               <div className="text-gray-500 text-sm mb-1">Request Date: {new Date(car.createdAt).toLocaleDateString()}</div>
-              <div className="mt-4 flex gap-2 items-center">
+              <div className="mt-4 flex flex-wrap gap-2 items-center">
                 <input
                   type="number"
                   min="1"
@@ -102,6 +105,13 @@ export default function DealerBidCarsPage() {
                 >
                   {placingBid === car._id ? "Placing..." : "Place Bid"}
                 </button>
+                <button
+                  className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded hover:bg-blue-100"
+                  onClick={() => setSelectedCar(car)}
+                >
+                  <Eye className="w-4 h-4" />
+                  View Details
+                </button>
               </div>
             </div>
             <div className="md:w-40 mt-4 md:mt-0 md:ml-6">
@@ -114,6 +124,11 @@ export default function DealerBidCarsPage() {
           </div>
         ))}
       </div>
+
+      {/* Car Details Modal */}
+      {selectedCar && (
+        <CarDetailsModal car={selectedCar} onClose={() => setSelectedCar(null)} />
+      )}
     </main>
   );
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { dealerSignup, dealerLogin, getPendingDealers, approveDealer } from '../controllers/dealer.controller.js';
-import { auth } from '../middleware/auth.middleware.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 

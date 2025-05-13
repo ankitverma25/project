@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 import Dealer from '../models/dealer.model.js';
 
-const auth = async (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
     if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
@@ -29,4 +29,4 @@ const dealerAuth = async (req, res, next) => {
   }
 };
 
-export { auth, dealerAuth };
+export { authMiddleware, dealerAuth };

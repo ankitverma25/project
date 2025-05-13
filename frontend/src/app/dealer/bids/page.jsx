@@ -43,12 +43,21 @@ export default function DealerBidsPage() {
       <div className="flex flex-col gap-8">
         {bids.map((bid) => (
           <div key={bid._id} className="bg-white rounded-lg shadow-md p-6 flex flex-col md:flex-row md:items-center justify-between">
-            <div className="flex-1">
-              <div className="font-semibold text-lg text-emerald-700 mb-2">
+            <div className="flex-1">              <div className="font-semibold text-lg text-emerald-700 mb-2">
                 {bid.car?.model} ({bid.car?.year})
               </div>
               <div className="text-gray-700 mb-1">Amount: <span className="font-bold">₹{bid.amount}</span></div>
-              <div className="text-gray-500 text-sm mb-1">Status: {bid.isAccepted ? "Accepted" : "Pending"}</div>
+              <div className="mb-1">
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                  bid.status === 'accepted' ? 'bg-green-100 text-green-800' : 
+                  bid.status === 'rejected' ? 'bg-red-100 text-red-800' : 
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {bid.status === 'accepted' ? 'Accepted' : 
+                   bid.status === 'rejected' ? 'Rejected' : 
+                   'Pending'}
+                </span>
+              </div>
               <div className="text-gray-500 text-sm">Date: {new Date(bid.createdAt).toLocaleDateString()}</div>
             </div>
             <div className="md:w-40 mt-4 md:mt-0 md:ml-6">

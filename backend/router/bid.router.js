@@ -1,13 +1,14 @@
-import { Router } from 'express';
-import dealerAuth from '../middleware/dealerAuth.middleware.js';
-import universalAuth from '../middleware/universalAuth.middleware.js';
-import { getAllBids, getBidsForCar, addBid, acceptBid } from '../controllers/bid.controller.js';
+import express from 'express';
+import { getAllBids, getBidsForCar, addBid, acceptBid, getAcceptedBids } from '../controllers/bid.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
-const router = Router();
+const router = express.Router();
 
-router.get('/allBids', universalAuth, getAllBids);
-router.get('/car/:carId', universalAuth, getBidsForCar);
-router.post('/add', dealerAuth, addBid);
-router.post('/:bidId/accept', universalAuth, acceptBid);
+// Routes
+router.get('/all', getAllBids);
+router.get('/car/:carId', getBidsForCar);
+router.post('/add', addBid);
+router.post('/accept/:bidId', acceptBid);
+router.get('/accepted-bids', authMiddleware, getAcceptedBids);
 
 export default router;

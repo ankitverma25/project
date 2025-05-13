@@ -62,20 +62,37 @@ const carSchema = new mongoose.Schema({
     city: { type: String, required: [true, "enter the city"] },
     pincode: { type: String, required: [true, "enter the pincode"] }
   },
+  termsAccepted: {
+    type: Boolean,
+    default: false
+  },
+  termsAcceptedAt: {
+    type: Date
+  },
   documents: {
     idProof: documentSchema,
     insurance: documentSchema,
     pollution: documentSchema,
     addressProof: documentSchema
   },
-
+  documentFormStatus: {
+    termsAccepted: { type: Boolean, default: false },
+    termsAcceptedAt: { type: Date },
+    isSubmitted: { type: Boolean, default: false },
+    submittedAt: { type: Date }
+  },
   documentFormStatus: {
     isSubmitted: { 
       type: Boolean, 
       default: false 
     },
     submittedAt: Date,
-    lastUpdatedAt: Date
+    lastUpdatedAt: Date,
+    termsAccepted: {
+      type: Boolean,
+      default: false
+    },
+    termsAcceptedAt: Date
   },
 
   documentStatus: {

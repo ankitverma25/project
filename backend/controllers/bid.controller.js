@@ -123,4 +123,39 @@ const acceptBid = async (req, res) => {
   }
 };
 
-export { getAllBids, getBidsForCar, addBid, acceptBid };
+const getAcceptedBids = async (req, res) => {
+  try {
+    const userId = req.user._id; // Changed from id to _id
+
+    console.log('Fetching bids for user:', userId);    // Find all accepted bids for the user's cars
+    const bids = await Bid.find({ status: 'accepted' })
+      .populate({
+        path: 'car',
+        match: { owner: userId },
+        select: '_id model documents documentFormStatus'
+      })
+      .populate('dealer', '_id name')
+      .lean();
+
+    // Filter out bids where car is null (not owned by user)
+    const validBids = bids
+      .filter(bid => bid.car !== null)
+      .map(bid => ({        carId: bid.car._id,
+        carName: bid.car.model,
+        dealerId: bid.dealer._id,
+        dealerName: bid.dealer.name,
+        bidAmount: bid.amount,
+        documentsStatus: bid.car.documents || {},
+        documentsSubmitted: bid.car.documentFormStatus?.isSubmitted || false,
+        termsAccepted: bid.car.documentFormStatus?.termsAccepted || false
+      }));
+
+    console.log('Found bids:', validBids);
+    res.status(200).json(validBids);
+  } catch (err) {
+    console.error('Error in getAcceptedBids:', err);
+    res.status(500).json({ message: 'Error fetching accepted bids', error: err.message });
+  }
+};
+
+export { getAllBids, getBidsForCar, addBid, acceptBid, getAcceptedBids };

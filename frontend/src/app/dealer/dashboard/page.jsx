@@ -5,7 +5,6 @@ import React from 'react'
 import StatsGrid from '@/components/dealer/StatsGrid'
 import QuickActions from '@/components/dealer/QuickActions'
 import ActiveBids from '@/components/dealer/ActiveBids'
-import InventoryOverview from '@/components/dealer/InventoryOverview'
 
 export default function DealerDashboard() {
   return (
@@ -16,10 +15,9 @@ export default function DealerDashboard() {
       {/* Quick Actions */}
       <QuickActions />
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Main Content */}
+      <div className="bg-white p-6 rounded-lg shadow">
         <ActiveBids />
-        <InventoryOverview />
       </div>
 
       {/* Recent Transactions */}

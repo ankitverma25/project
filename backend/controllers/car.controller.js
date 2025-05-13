@@ -1,5 +1,7 @@
 import Car from "../models/car.model.js";
 import cloudinary from '../src/cloudinary.js';
+import fs from 'fs';
+import mongoose from 'mongoose';
 
 // Function to add a car details
 
@@ -86,4 +88,129 @@ const getAllCars = async (req, res) => {
     }
 }
 
-export { addCar, getAllCars };
+const uploadDocument = async (req, res) => {
+  try {
+    const { carId, category } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Verify car ownership and submission status
+    const car = await Car.findOne({ _id: carId, owner: req.user._id });
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found or not owned by user' });
+    }
+
+    // Check if documents have already been submitted
+    if (car.documentFormStatus?.isSubmitted) {
+      return res.status(400).json({ 
+        message: 'Documents have already been submitted for this car. Cannot modify documents after submission.' 
+      });
+    }
+
+    // Upload to cloudinary
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { resource_type: 'auto' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(file.buffer);
+    });
+
+    // Update car document status
+    car.documents = car.documents || {};
+    car.documents[category] = {
+      url: result.secure_url,
+      status: 'pending',
+      uploadedAt: new Date()
+    };
+
+    await car.save();
+    res.status(200).json({ message: 'Document uploaded successfully', car });
+
+  } catch (err) {
+    console.error('Error uploading document:', err);
+    res.status(500).json({ message: 'Failed to upload document', error: err.message });
+  }
+};
+
+const acceptTerms = async (req, res) => {
+  try {
+    const { carId } = req.body;
+
+    // Verify car ownership
+    const car = await Car.findOne({ _id: carId, owner: req.user._id });
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found or not owned by user' });
+    }
+
+    // Update terms acceptance status
+    car.documentFormStatus = car.documentFormStatus || {};
+    car.documentFormStatus.termsAccepted = true;
+    car.documentFormStatus.termsAcceptedAt = new Date();
+    await car.save();
+
+    res.status(200).json({ message: 'Terms accepted successfully', car });
+  } catch (err) {
+    console.error('Error accepting terms:', err);
+    res.status(500).json({ message: 'Failed to accept terms', error: err.message });
+  }
+};
+
+const submitDocuments = async (req, res) => {
+  try {
+    const { carId, documents } = req.body;
+
+    // Verify car ownership
+    const car = await Car.findOne({ _id: carId, owner: req.user._id });
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found or not owned by user' });
+    }
+
+    // Check if documents are already submitted
+    if (car.documentFormStatus?.isSubmitted) {
+      return res.status(400).json({ 
+        message: 'Documents have already been submitted for this car. Please contact support if you need to make changes.' 
+      });
+    }    // Check if terms are accepted
+    if (!car.documentFormStatus?.termsAccepted) {
+      return res.status(400).json({ message: 'Terms must be accepted before submitting documents' });
+    }
+
+    // Check if documents are already submitted but in a different status
+    if (car.documentStatus === 'verifying') {
+      return res.status(400).json({ message: 'Documents are already under verification' });
+    }
+    if (car.documentStatus === 'verified') {
+      return res.status(400).json({ message: 'Documents have already been verified' });
+    }
+
+    // Check if all required documents are uploaded
+    const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
+    const missingDocs = requiredDocs.filter(doc => !car.documents?.[doc]?.url);
+
+    if (missingDocs.length > 0) {
+      return res.status(400).json({ 
+        message: 'Missing required documents', 
+        missingDocuments: missingDocs 
+      });
+    }    // Update submission status
+    car.documentFormStatus = car.documentFormStatus || {};
+    car.documentFormStatus.isSubmitted = true;
+    car.documentFormStatus.submittedAt = new Date();
+    car.documentStatus = 'verifying';
+    car.documents = documents; // Update with all documents
+    await car.save();
+
+    res.status(200).json({ message: 'Documents submitted successfully', car });
+  } catch (err) {
+    console.error('Error submitting documents:', err);
+    res.status(500).json({ message: 'Failed to submit documents', error: err.message });
+  }
+};
+
+export { addCar, getAllCars, uploadDocument, acceptTerms, submitDocuments };

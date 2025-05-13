@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, LogOut, Home, Gavel, BarChart2, Warehouse, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut, Home, Gavel, BarChart2, FileText, Settings } from 'lucide-react';
 
 const dealerLinks = [
   { href: '/dealer/dashboard', label: 'Dashboard', icon: <Home size={18} /> },
   { href: '/dealer/bid-cars', label: 'Bid on Cars', icon: <Gavel size={18} /> },
   { href: '/dealer/my-bids', label: 'My Bids', icon: <BarChart2 size={18} /> },
-  { href: '/dealer/inventory', label: 'Inventory', icon: <Warehouse size={18} /> },
+  { href: '/dealer/documents', label: 'Documents', icon: <FileText size={18} /> },
   { href: '/dealer/settings', label: 'Settings', icon: <Settings size={18} /> },
 ];
 

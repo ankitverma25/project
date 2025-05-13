@@ -1,7 +1,6 @@
 // app/dealer/analytics/page.js
 import StatsGrid from '@/components/dealer/StatsGrid'
 import RevenueChart from '@/components/dealer/RevenueChart'
-import InventoryDistribution from '@/components/dealer/InventoryDistribution'
 import PerformanceMetrics from '@/components/dealer/PerformanceMetrics'
 
 export default function AnalyticsPage() {

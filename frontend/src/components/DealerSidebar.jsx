@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ChevronLeft, ChevronRight, LayoutDashboard, Gavel, ListChecks, Boxes, BarChart2, Settings } from 'lucide-react';
+import { Menu, X, ChevronLeft, ChevronRight, LayoutDashboard, Gavel, ListChecks, FileText, BarChart2, Settings } from 'lucide-react';
 
 const dealerLinks = [
   { href: '/dealer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dealer/bid-cars', label: 'Bid on Cars', icon: Gavel },
   { href: '/dealer/my-bids', label: 'My Bids', icon: ListChecks },
-  { href: '/dealer/inventory', label: 'Inventory', icon: Boxes },
+  { href: '/dealer/documents', label: 'Documents', icon: FileText },
   { href: '/dealer/analytics', label: 'Analytics', icon: BarChart2 },
   { href: '/dealer/settings', label: 'Settings', icon: Settings },
 ];
