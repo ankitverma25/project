@@ -21,6 +21,7 @@ const userSchema=new mongoose.Schema({
       },
       avatar: { 
         type: String 
+        
       }, // Profile photo URL
       myCars: [{ 
         type: mongoose.Schema.Types.ObjectId, 
