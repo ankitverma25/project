@@ -4,10 +4,12 @@ import {
   getAllCars, 
   uploadDocument,
   acceptTerms,
-  submitDocuments 
+  submitDocuments,
+  getSubmittedDocuments,
+  verifyDocument
 } from "../controllers/car.controller.js";
 import upload from '../middleware/multer.middleware.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
+import { authMiddleware, dealerAuth } from '../middleware/auth.middleware.js';
 import universalAuth from '../middleware/universalAuth.middleware.js';
 
 const router = Router();   
@@ -29,5 +31,9 @@ router.route('/upload-document').post(
 
 router.route('/accept-terms').post(authMiddleware, acceptTerms);
 router.route('/submit-documents').post(authMiddleware, submitDocuments);
+
+// Dealer document verification routes
+router.get('/submitted-documents', dealerAuth, getSubmittedDocuments);
+router.post('/verify-document', dealerAuth, verifyDocument);
 
 export default router;

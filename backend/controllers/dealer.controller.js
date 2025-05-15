@@ -31,9 +31,8 @@ const dealerLogin = async (req, res) => {
         }
         if (!dealer.isApproved) {
             return res.status(403).json({ message: 'Dealer not approved by admin' });
-        }
-        const { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved } = dealer;
-        const payload = { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved };
+        }        const { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved } = dealer;
+        const payload = { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved, role: 'dealer' };
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3h' },
             (err, token) => {
                 if (err) {

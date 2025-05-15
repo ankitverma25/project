@@ -18,8 +18,22 @@ export default function LegalDocumentsPage() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false)
 
   useEffect(() => {
-    fetchAcceptedBids()
-  }, [])
+    // Initial fetch
+    fetchAcceptedBids();
+  }, []);
+
+  // Polling effect for document status updates
+  useEffect(() => {
+    if (selectedCar) {
+      // Initial fetch on car selection
+      fetchLatestStatus();
+      
+      // Start polling
+      const interval = setInterval(fetchLatestStatus, 10000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [selectedCar]);
 
   const fetchAcceptedBids = async () => {
     try {
@@ -34,6 +48,40 @@ export default function LegalDocumentsPage() {
       setLoading(false)
     }
   }
+
+  // Function to fetch latest document status
+  const fetchLatestStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || !selectedCar) return;
+
+      const response = await axios.get('http://localhost:8000/bid/accepted-bids', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const updatedBids = response.data;
+      console.log('Fetched updated bids:', updatedBids);
+      
+      // Update state with latest document status
+      setAcceptedBids(prev => prev.map(bid => {
+        const updatedBid = updatedBids.find(u => u.carId === bid.carId);
+        if (updatedBid) {
+          return {
+            ...bid,
+            documents: updatedBid.documentsStatus || updatedBid.documents,
+            documentsSubmitted: updatedBid.documentsSubmitted,
+            termsAccepted: updatedBid.termsAccepted,
+            documentStatus: updatedBid.documentStatus,
+            verifiedDocsCount: updatedBid.verifiedDocsCount,
+            totalDocsRequired: updatedBid.totalDocsRequired
+          };
+        }
+        return bid;
+      }));
+    } catch (err) {
+      console.error('Failed to fetch latest status:', err);
+    }
+  };
 
   const documentCategories = [
     {
@@ -85,12 +133,24 @@ export default function LegalDocumentsPage() {
         return 'bg-yellow-100 text-yellow-800'
     }
   }
-
-  const getCompletionPercentage = (statuses) => {
-    const total = Object.keys(statuses).length
-    const completed = Object.values(statuses).filter(status => status === 'verified').length
-    return Math.round((completed / total) * 100)
+  const getCompletionPercentage = (documents) => {
+    if (!documents) return 0;
+    const total = 4; // Total required documents
+    const completed = Object.values(documents).filter(doc => doc?.status === 'verified').length;
+    return Math.round((completed / total) * 100);
   }
+
+  const getDocumentStatusColor = (doc) => {
+    if (!doc?.status || doc.status === 'pending') return 'text-yellow-500';
+    if (doc.status === 'verified') return 'text-green-500';
+    return 'text-red-500';
+  };
+
+  const getDocumentStatusText = (doc) => {
+    if (!doc?.status || doc.status === 'pending') return 'Pending Verification';
+    if (doc.status === 'verified') return 'Verified';
+    return doc.rejectionMessage || 'Rejected';
+  };
 
   const handleFileUpload = async (e, categoryId) => {
     const file = e.target.files[0]
@@ -153,40 +213,40 @@ export default function LegalDocumentsPage() {
     }
   }
   const handleSubmitForVerification = async () => {
-    if (!selectedCar || !termsAccepted) {
-      setShowTermsError(true)
-      return
+    if (!selectedCar || !currentBid?.termsAccepted) {
+      setShowTermsError(true);
+      return;
     }
   
     // Check if documents are already submitted
     if (currentBid?.documentsSubmitted) {
-      toast.error('Documents have already been submitted for this car')
-      return
+      toast.error('Documents have already been submitted for this car');
+      return;
     }
   
     // Check if all required documents are selected
     const missingDocs = documentCategories
       .filter(cat => cat.required)
-      .filter(cat => !localDocuments[cat.id]?.url && !currentBid?.documents?.[cat.id]?.url)
+      .filter(cat => !localDocuments[cat.id]?.url && !currentBid?.documents?.[cat.id]?.url);
   
     if (missingDocs.length > 0) {
-      toast.error(`Missing required documents: ${missingDocs.map(d => d.title).join(', ')}`)
-      return
+      toast.error(`Missing required documents: ${missingDocs.map(d => d.title).join(', ')}`);
+      return;
     }
   
-    const loadingToast = toast.loading('Uploading and submitting documents...')
+    const loadingToast = toast.loading('Uploading and submitting documents...');
     
     try {
-      setUploading(true)
-      const token = localStorage.getItem('token')
+      setUploading(true);
+      const token = localStorage.getItem('token');
       
       // First, upload all selected files
       const uploadPromises = Object.entries(selectedFiles).map(async ([categoryId, file]) => {
-        const formData = new FormData()
-        formData.append('document', file)
-        formData.append('category', categoryId)
-        formData.append('carId', selectedCar)
-        
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('category', categoryId);
+        formData.append('carId', selectedCar);
+  
         const response = await axios.post(
           'http://localhost:8000/car/upload-document',
           formData,
@@ -196,29 +256,29 @@ export default function LegalDocumentsPage() {
               Authorization: `Bearer ${token}`
             }
           }
-        )
-        return { categoryId, data: response.data }
-      })
+        );
+        return { categoryId, data: response.data };
+      });
   
       // Wait for all uploads to complete
-      const uploadResults = await Promise.all(uploadPromises)
+      const uploadResults = await Promise.all(uploadPromises);
       
       // Update documents object with uploaded URLs
-      const documents = { ...currentBid?.documents }
+      const documents = { ...currentBid?.documents };
       uploadResults.forEach(({ categoryId, data }) => {
         documents[categoryId] = {
           url: data.car.documents[categoryId].url,
           status: 'pending',
           uploadedAt: new Date()
-        }
-      })
+        };
+      });
       
       // Submit all documents for verification
       await axios.post(
         'http://localhost:8000/car/submit-documents',
         { 
           carId: selectedCar,
-          documents: documents
+          documents 
         },
         { 
           headers: { 
@@ -226,7 +286,7 @@ export default function LegalDocumentsPage() {
             'Content-Type': 'application/json'
           } 
         }
-      )
+      );
   
       // Update local state
       setAcceptedBids(prev => prev.map(bid => {
@@ -236,33 +296,40 @@ export default function LegalDocumentsPage() {
             documents,
             documentsSubmitted: true,
             documentStatus: 'verifying'
-          }
+          };
         }
-        return bid
-      }))
+        return bid;
+      }));
   
-      // Clear selected files
-      setSelectedFiles({})
-      setLocalDocuments({})
+      // Clear selected files and update UI
+      setSelectedFiles({});
+      setLocalDocuments({});
       
-      toast.success('All documents uploaded and submitted successfully!', { id: loadingToast })
-      setShowSuccessBanner(true)
-      setTimeout(() => setShowSuccessBanner(false), 5000) // Hide after 5 seconds
+      toast.success('All documents uploaded and submitted successfully!', { id: loadingToast });
+      setShowSuccessBanner(true);
+      setTimeout(() => setShowSuccessBanner(false), 5000);
     } catch (err) {
-      console.error('Submission failed:', err)
+      console.error('Submission failed:', err);
       if (err.response?.data?.message?.includes('already been submitted')) {
-        toast.error('Documents have already been submitted for this car', { id: loadingToast })
+        toast.error('Documents have already been submitted for this car', { id: loadingToast });
       } else {
-        toast.error(err.response?.data?.message || 'Failed to submit documents', { id: loadingToast })
+        toast.error(err.response?.data?.message || 'Failed to submit documents', { id: loadingToast });
       }
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
   
+  // Helper: Check if all docs are verified
+  const isAllDocsVerified = (currentBid) => {
+    if (!currentBid?.documents) return false;
+    return ['idProof','insurance','pollution','addressProof'].every(
+      docKey => currentBid.documents[docKey]?.status === 'verified'
+    );
+  };
 
   if (loading) return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-    <p>Loading...</p>
+    <p>Loading...</p> b
   </div>
 
   if (error) return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -322,7 +389,7 @@ export default function LegalDocumentsPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">{bid.bidAmount}</p>
-                    <p className="text-xs text-gray-500">{getCompletionPercentage(bid.documentsStatus)}% Complete</p>
+                    <p className="text-xs text-gray-500">{getCompletionPercentage(bid.documents)}% Complete</p>
                   </div>
                 </button>
               ))}
@@ -404,14 +471,14 @@ export default function LegalDocumentsPage() {
                       className="bg-blue-600 h-2 rounded-full"
                       style={{
                         width: `${getCompletionPercentage(
-                          acceptedBids.find(bid => bid.carId === selectedCar)?.documentsStatus
+                          acceptedBids.find(bid => bid.carId === selectedCar)?.documents
                         )}%`
                       }}
                     ></div>
                   </div>
                   <span className="text-sm text-gray-600">
                     {getCompletionPercentage(
-                      acceptedBids.find(bid => bid.carId === selectedCar)?.documentsStatus
+                      acceptedBids.find(bid => bid.carId === selectedCar)?.documents
                     )}% Complete
                   </span>
                 </div>
@@ -434,6 +501,16 @@ export default function LegalDocumentsPage() {
                       <div>
                         <h3 className="text-lg font-medium text-gray-900">{category.title}</h3>
                         <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+                        {currentBid?.documents?.[category.id] && (
+                          <div className={`mt-1 text-sm ${getDocumentStatusColor(currentBid.documents[category.id])} flex items-center`}>
+                            <span className="mr-1">{getDocumentStatusText(currentBid.documents[category.id])}</span>
+                            {currentBid.documents[category.id]?.verifiedAt && (
+                              <span className="text-gray-400 text-xs">
+                                - Verified on {new Date(currentBid.documents[category.id].verifiedAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {getStatusIcon(status)}
                     </div>
@@ -534,14 +611,18 @@ export default function LegalDocumentsPage() {
               <div>
                 <p className="text-lg font-medium text-gray-900">
                   {isDocumentsSubmitted 
-                    ? "Documents submitted for verification" 
+                    ? isAllDocsVerified(currentBid)
+                      ? "All documents verified by dealer. Car is ready for pickup!"
+                      : "Documents submitted for verification" 
                     : "Complete all required documents to proceed"}
                 </p>
                 <p className="mt-1 text-sm text-gray-600">
                   {!isTermsAccepted 
                     ? "Please accept the terms and conditions"
                     : isDocumentsSubmitted
-                    ? "Please wait for dealer verification"
+                    ? isAllDocsVerified(currentBid)
+                      ? "Dealer has verified all your documents. Please wait for pickup scheduling."
+                      : "Please wait for dealer verification"
                     : "Documents will be verified by the dealer"}
                 </p>
               </div>

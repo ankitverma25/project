@@ -100,7 +100,7 @@ export default function UserBidsPage() {
       }));
 
       const response = await axios.post(
-        `http://localhost:8000/bid/${bidId}/accept`,
+        `http://localhost:8000/bid/accept/${bidId}`,
         { carId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

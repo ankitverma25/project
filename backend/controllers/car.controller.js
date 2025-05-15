@@ -2,6 +2,10 @@ import Car from "../models/car.model.js";
 import cloudinary from '../src/cloudinary.js';
 import fs from 'fs';
 import mongoose from 'mongoose';
+import events from 'events';
+
+// Create event emitter
+export const carEvents = new events.EventEmitter();
 
 // Function to add a car details
 
@@ -213,4 +217,77 @@ const submitDocuments = async (req, res) => {
   }
 };
 
-export { addCar, getAllCars, uploadDocument, acceptTerms, submitDocuments };
+// Get all cars with submitted documents (for dealer verification)
+const getSubmittedDocuments = async (req, res) => {
+  try {
+    // Only cars where documentFormStatus.isSubmitted === true
+    const cars = await Car.find({
+      'documentFormStatus.isSubmitted': true
+    })
+      .populate('owner', 'name email')
+      .populate({
+        path: 'bids',
+        populate: { path: 'dealer', select: 'name' }
+      });
+
+    // For each car, find the accepted bid (if any)
+    const result = cars.map(car => {
+      // Find accepted bid
+      let acceptedBid = null;
+      if (Array.isArray(car.bids)) {
+        acceptedBid = car.bids.find(bid => bid.status === 'accepted');
+      }
+      return {
+        _id: car._id,
+        model: car.model,
+        year: car.year,
+        owner: car.owner,
+        documents: car.documents,
+        documentFormStatus: car.documentFormStatus,
+        status: car.status,
+        acceptedDealerName: acceptedBid?.dealer?.name || '',
+      };
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    console.error('Error fetching submitted documents:', err);
+    res.status(500).json({ message: 'Failed to fetch submitted documents', error: err.message });
+  }
+};
+
+// Dealer verifies or rejects a document
+const verifyDocument = async (req, res) => {
+  try {
+    const { carId, docKey, status, rejectionMessage } = req.body;
+    if (!['verified', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    const car = await Car.findById(carId);
+    if (!car) return res.status(404).json({ message: 'Car not found' });
+    if (!car.documents[docKey]) return res.status(404).json({ message: 'Document not found' });
+    car.documents[docKey].status = status;
+    if (status === 'verified') {
+      car.documents[docKey].verifiedAt = new Date();
+      car.documents[docKey].rejectionMessage = undefined;
+    } else if (status === 'rejected') {
+      car.documents[docKey].rejectionMessage = rejectionMessage || '';
+      car.documents[docKey].verifiedAt = undefined;
+    }
+    await car.save();
+    
+    // Emit document status update event
+    carEvents.emit('document-status-update', {
+      carId: car._id,
+      documentKey: docKey,
+      status,
+      car
+    });
+    
+    res.status(200).json({ message: `Document ${status} successfully`, car });
+  } catch (err) {
+    console.error('Error verifying document:', err);
+    res.status(500).json({ message: 'Failed to verify document', error: err.message });
+  }
+};
+
+export { addCar, getAllCars, uploadDocument, acceptTerms, submitDocuments, getSubmittedDocuments, verifyDocument };

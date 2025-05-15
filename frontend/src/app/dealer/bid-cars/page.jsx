@@ -34,7 +34,7 @@ export default function DealerBidCarsPage() {
     // Get all cars and all bids, then filter
     Promise.all([
       axios.get("http://localhost:8000/car/allCars", { headers: { Authorization: `Bearer ${t}` } }),
-      axios.get("http://localhost:8000/bid/allBids", { headers: { Authorization: `Bearer ${t}` } })
+      axios.get("http://localhost:8000/bid/all", { headers: { Authorization: `Bearer ${t}` } })
     ])
       .then(([carRes, bidRes]) => {
         const allCars = carRes.data;

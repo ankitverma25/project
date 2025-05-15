@@ -74,13 +74,8 @@ const carSchema = new mongoose.Schema({
     insurance: documentSchema,
     pollution: documentSchema,
     addressProof: documentSchema
-  },
-  documentFormStatus: {
-    termsAccepted: { type: Boolean, default: false },
-    termsAcceptedAt: { type: Date },
-    isSubmitted: { type: Boolean, default: false },
-    submittedAt: { type: Date }
-  },
+  },  
+  
   documentFormStatus: {
     isSubmitted: { 
       type: Boolean, 
@@ -115,6 +110,11 @@ const carSchema = new mongoose.Schema({
     enum: ["open", "closed"], 
     default: "open" 
   },// Bidding open/closed
+
+  acceptedDealer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Dealer'
+  },
   
   bids: [{ 
     type: mongoose.Schema.Types.ObjectId, 

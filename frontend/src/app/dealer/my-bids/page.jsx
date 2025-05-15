@@ -22,7 +22,7 @@ export default function DealerBidsPage() {
       setLoading(false);
       return;
     }
-    axios.get("http://localhost:8000/bid/allBids", {
+    axios.get("http://localhost:8000/bid/all", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {

@@ -99,9 +99,12 @@ const acceptBid = async (req, res) => {
         { session }
       );
 
-      // Close the car for further bidding
+      // Close the car for further bidding and store accepted dealer
       await Car.findByIdAndUpdate(carId, 
-        { status: 'closed' },
+        { 
+          status: 'closed',
+          acceptedDealer: bid.dealer 
+        },
         { session }
       );
 
@@ -135,20 +138,29 @@ const getAcceptedBids = async (req, res) => {
         select: '_id model documents documentFormStatus'
       })
       .populate('dealer', '_id name')
-      .lean();
-
-    // Filter out bids where car is null (not owned by user)
+      .lean();    // Filter out bids where car is null (not owned by user)
     const validBids = bids
       .filter(bid => bid.car !== null)
-      .map(bid => ({        carId: bid.car._id,
-        carName: bid.car.model,
-        dealerId: bid.dealer._id,
-        dealerName: bid.dealer.name,
-        bidAmount: bid.amount,
-        documentsStatus: bid.car.documents || {},
-        documentsSubmitted: bid.car.documentFormStatus?.isSubmitted || false,
-        termsAccepted: bid.car.documentFormStatus?.termsAccepted || false
-      }));
+      .map(bid => {
+        // Count verified documents
+        const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
+        const verifiedCount = requiredDocs.filter(doc => 
+          bid.car.documents?.[doc]?.status === 'verified'
+        ).length;
+
+        return {
+          carId: bid.car._id,
+          carName: bid.car.model,
+          dealerId: bid.dealer._id,
+          dealerName: bid.dealer.name,
+          bidAmount: bid.amount,
+          documentsStatus: bid.car.documents || {},
+          documentsSubmitted: bid.car.documentFormStatus?.isSubmitted || false,
+          termsAccepted: bid.car.documentFormStatus?.termsAccepted || false,
+          verifiedDocsCount: verifiedCount,
+          totalDocsRequired: requiredDocs.length
+        };
+      });
 
     console.log('Found bids:', validBids);
     res.status(200).json(validBids);
