@@ -1,4 +1,5 @@
 import Car from "../models/car.model.js";
+import Pickup from "../models/pickup.model.js";
 import cloudinary from '../src/cloudinary.js';
 import fs from 'fs';
 import mongoose from 'mongoose';
@@ -220,23 +221,19 @@ const submitDocuments = async (req, res) => {
 // Get all cars with submitted documents (for dealer verification)
 const getSubmittedDocuments = async (req, res) => {
   try {
-    // Only cars where documentFormStatus.isSubmitted === true
+    const dealerId = req.dealer._id;
+
+    // Find cars where this dealer's bid is accepted
     const cars = await Car.find({
-      'documentFormStatus.isSubmitted': true
+      'documentFormStatus.isSubmitted': true,
+      'acceptedDealer': dealerId
     })
       .populate('owner', 'name email')
       .populate({
         path: 'bids',
         populate: { path: 'dealer', select: 'name' }
-      });
-
-    // For each car, find the accepted bid (if any)
+      });    // For each car, format the response
     const result = cars.map(car => {
-      // Find accepted bid
-      let acceptedBid = null;
-      if (Array.isArray(car.bids)) {
-        acceptedBid = car.bids.find(bid => bid.status === 'accepted');
-      }
       return {
         _id: car._id,
         model: car.model,
@@ -244,10 +241,13 @@ const getSubmittedDocuments = async (req, res) => {
         owner: car.owner,
         documents: car.documents,
         documentFormStatus: car.documentFormStatus,
+        documentStatus: car.documentStatus,
+        readyForPickup: car.readyForPickup || false, // Ensure it's always a boolean
         status: car.status,
-        acceptedDealerName: acceptedBid?.dealer?.name || '',
+        acceptedDealerName: req.dealer.name
       };
     });
+
     res.status(200).json(result);
   } catch (err) {
     console.error('Error fetching submitted documents:', err);
@@ -290,4 +290,149 @@ const verifyDocument = async (req, res) => {
   }
 };
 
-export { addCar, getAllCars, uploadDocument, acceptTerms, submitDocuments, getSubmittedDocuments, verifyDocument };
+// Final verification after all documents are verified
+const verifyFinal = async (req, res) => {
+  try {
+    const { carId } = req.body;
+    const dealerId = req.dealer._id;
+
+    const car = await Car.findById(carId).populate('owner');
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found' });
+    }
+
+    // Check if dealer is authorized (their bid was accepted)
+    if (car.acceptedDealer.toString() !== dealerId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to verify this car' });
+    }
+
+    // Check if all documents are verified
+    const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
+    const allVerified = requiredDocs.every(docKey => 
+      car.documents?.[docKey]?.status === 'verified'
+    );
+
+    if (!allVerified) {
+      return res.status(400).json({ message: 'All documents must be verified first' });
+    }
+
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Update car status
+      car.documentStatus = 'verified';
+      await car.save({ session });
+
+      // Create a new pickup entry
+      const pickup = new Pickup({
+        car: carId,
+        user: car.owner._id,
+        dealer: dealerId,
+        status: 'pending'
+      });
+      await pickup.save({ session });
+
+      await session.commitTransaction();
+      res.status(200).json({ 
+        message: 'Car verified successfully and pickup entry created', 
+        car,
+        pickup 
+      });
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
+    }
+  } catch (err) {
+    console.error('Final verification error:', err);
+    res.status(500).json({ message: 'Failed to complete verification', error: err.message });
+  }
+};
+
+// Get verified cars for dealer
+const getVerifiedCars = async (req, res) => {
+  try {
+    const dealerId = req.dealer._id;
+
+    // Find cars where:
+    // 1. This dealer's bid is accepted
+    // 2. Documents are verified
+    // 3. Pickup is not created yet
+    const cars = await Car.find({
+      acceptedDealer: dealerId,
+      documentStatus: 'verified'
+    })
+    .populate('owner', 'name email phone')
+    .populate({
+      path: 'bids',
+      match: { dealer: dealerId, status: 'accepted' }
+    });
+
+    // Filter out cars that already have pickups
+    const pickups = await Pickup.find({ dealer: dealerId }).distinct('car');
+    const availableCars = cars.filter(car => !pickups.includes(car._id));
+
+    res.status(200).json(availableCars);
+  } catch (err) {
+    console.error('Error fetching verified cars:', err);
+    res.status(500).json({ message: 'Failed to fetch verified cars', error: err.message });
+  }
+};
+
+// Mark car ready for pickup
+const markReadyForPickup = async (req, res) => {
+  try {
+    const { carId } = req.params;
+    const dealerId = req.dealer._id;
+
+    const car = await Car.findById(carId);
+    if (!car) {
+      return res.status(404).json({ message: 'Car not found' });
+    }
+
+    // Check if dealer is authorized (their bid was accepted)
+    if (car.acceptedDealer.toString() !== dealerId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to mark this car as ready' });
+    }
+
+    // Check if all documents are verified
+    const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
+    const allVerified = requiredDocs.every(docKey => 
+      car.documents?.[docKey]?.status === 'verified'
+    );
+
+    if (!allVerified) {
+      return res.status(400).json({ message: 'All documents must be verified first' });
+    }
+
+    // Update car status
+    car.documentStatus = 'verified';
+    car.readyForPickup = true;
+    await car.save();
+
+    res.status(200).json({ 
+      success: true,
+      message: 'Car marked as ready for pickup',
+      car
+    });
+  } catch (err) {
+    console.error('Mark ready for pickup error:', err);
+    res.status(500).json({ message: 'Failed to mark car as ready for pickup', error: err.message });
+  }
+};
+
+export { 
+  addCar, 
+  getAllCars, 
+  uploadDocument, 
+  acceptTerms, 
+  submitDocuments, 
+  getSubmittedDocuments, 
+  verifyDocument, 
+  verifyFinal,
+  markReadyForPickup,
+  getVerifiedCars
+};

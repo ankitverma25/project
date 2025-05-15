@@ -89,15 +89,19 @@ const carSchema = new mongoose.Schema({
     },
     termsAcceptedAt: Date
   },
-
   documentStatus: {
     type: String,
     enum: ['pending', 'verifying', 'verified', 'rejected'],
     default: 'pending'
   },
 
+  readyForPickup: {
+    type: Boolean,
+    default: false
+  },
+
   condition: {
-    type: String, 
+    type: String,
     enum: ["excellent", "good", "poor"], 
     default: "good" 
   },

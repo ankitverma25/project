@@ -6,7 +6,10 @@ import {
   acceptTerms,
   submitDocuments,
   getSubmittedDocuments,
-  verifyDocument
+  verifyDocument,
+  verifyFinal,
+  markReadyForPickup,
+  getVerifiedCars
 } from "../controllers/car.controller.js";
 import upload from '../middleware/multer.middleware.js';
 import { authMiddleware, dealerAuth } from '../middleware/auth.middleware.js';
@@ -35,5 +38,14 @@ router.route('/submit-documents').post(authMiddleware, submitDocuments);
 // Dealer document verification routes
 router.get('/submitted-documents', dealerAuth, getSubmittedDocuments);
 router.post('/verify-document', dealerAuth, verifyDocument);
+
+// Final verification route
+router.post('/verify-final', dealerAuth, verifyFinal);
+
+// Mark car ready for pickup
+router.post('/mark-ready-for-pickup/:carId', dealerAuth, markReadyForPickup);
+
+// Get verified cars ready for pickup
+router.get('/verified-cars', dealerAuth, getVerifiedCars);
 
 export default router;
