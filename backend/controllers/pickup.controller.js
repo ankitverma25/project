@@ -3,8 +3,9 @@ import Car from '../models/car.model.js';
 
 // Create a pickup (triggered after all documents are verified)
 export const createPickup = async (req, res) => {
+  console.log('Received /pickup/create body:', req.body);
   try {
-    const { carId, userId, dealerId } = req.body;
+    const { carId, userId, dealerId, scheduledDate, assignedEmployee, employeeContact, employeeDesignation, notes } = req.body;
 
     if (!carId || !userId || !dealerId) {
       return res.status(400).json({ 
@@ -20,18 +21,17 @@ export const createPickup = async (req, res) => {
         message: 'Pickup already exists for this car',
         pickup: existingPickup
       });
-    }    // Check if car exists and documents are verified
+    }
+    // Check if car exists and documents are verified
     const car = await Car.findById(carId);
     if (!car) {
       return res.status(404).json({ message: 'Car not found' });
     }
-    
     // Check if all required documents are verified
     const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
     const allVerified = requiredDocs.every(docKey => 
       car.documents?.[docKey]?.status === 'verified'
     );
-    
     if (!allVerified) {
       return res.status(400).json({ message: 'All car documents must be verified before creating pickup' });
     }
@@ -40,18 +40,21 @@ export const createPickup = async (req, res) => {
       car: carId,
       user: userId,
       dealer: dealerId,
-      status: 'pending',
+      status: scheduledDate ? 'scheduled' : 'pending',
+      scheduledDate: scheduledDate || undefined,
+      assignedEmployee: assignedEmployee || undefined,
+      employeeContact: employeeContact || undefined,
+      employeeDesignation: employeeDesignation || undefined,
+      notes: notes || undefined,
     });
 
     console.log('Creating new pickup:', pickup);
-    
     const savedPickup = await pickup.save();
     const populatedPickup = await savedPickup
       .populate('car')
       .populate('user')
       .populate('dealer')
       .execPopulate();
-
     res.status(201).json(populatedPickup);
   } catch (err) {
     console.error('Create pickup error:', err);
@@ -63,18 +66,27 @@ export const createPickup = async (req, res) => {
 export const schedulePickup = async (req, res) => {
   try {
     const { pickupId } = req.params;
-    const { scheduledDate, assignedEmployee, reason } = req.body;
+    const { scheduledDate, assignedEmployee, employeeContact, employeeDesignation, notes, reason } = req.body;
     const pickup = await Pickup.findById(pickupId);
     if (!pickup) return res.status(404).json({ message: 'Pickup not found' });
+    // Only allow scheduling if status is 'ready-for-pickup' or 'scheduled'
+    if (pickup.status !== 'ready-for-pickup' && pickup.status !== 'scheduled') {
+      return res.status(400).json({ message: 'Pickup not ready for scheduling. Current status: ' + pickup.status });
+    }
     // Add to reschedule history
-    if (pickup.scheduledDate) {
+    if (pickup.scheduledDate && scheduledDate && new Date(pickup.scheduledDate).getTime() !== new Date(scheduledDate).getTime()) {
       pickup.rescheduleHistory.push({ by: 'dealer', date: scheduledDate, reason });
     }
-    pickup.scheduledDate = scheduledDate;
-    pickup.assignedEmployee = assignedEmployee;
+    if (scheduledDate) pickup.scheduledDate = scheduledDate;
+    if (assignedEmployee) pickup.assignedEmployee = assignedEmployee;
+    if (employeeContact) pickup.employeeContact = employeeContact;
+    if (employeeDesignation) pickup.employeeDesignation = employeeDesignation;
+    if (notes) pickup.notes = notes;
     pickup.status = 'scheduled';
     await pickup.save();
-    res.json(pickup);
+    // Populate for response consistency
+    const populatedPickup = await Pickup.findById(pickup._id).populate('car user dealer');
+    res.json(populatedPickup);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -135,6 +147,19 @@ export const getPickupById = async (req, res) => {
     const { pickupId } = req.params;
     const pickup = await Pickup.findById(pickupId).populate('car user dealer');
     if (!pickup) return res.status(404).json({ message: 'Pickup not found' });
+    res.json(pickup);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get pickup by carId
+export const getPickupByCarId = async (req, res) => {
+  try {
+    const { carId } = req.params;
+    const pickup = await Pickup.findOne({ car: carId })
+      .populate('car user dealer');
+    if (!pickup) return res.status(404).json({ message: 'Pickup not found for this car' });
     res.json(pickup);
   } catch (err) {
     res.status(500).json({ message: err.message });

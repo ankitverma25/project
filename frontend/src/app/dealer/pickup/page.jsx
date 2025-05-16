@@ -14,9 +14,9 @@ export default function DealerPickupPage() {
     date: '',
     time: '',
     assignedEmployee: '',
-    employeeContact: '', // Added employee contact
-    employeeDesignation: '', // Added employee designation
-    notes: '' // Added notes field
+    employeeContact: '',
+    employeeDesignation: '',
+    notes: ''
   });
 
   useEffect(() => {
@@ -54,18 +54,26 @@ export default function DealerPickupPage() {
     e.preventDefault();
     try {
       const dealerToken = localStorage.getItem('dealerToken');
+      const dealer = JSON.parse(localStorage.getItem('dealer'));
+      if (!selectedCar || !selectedCar.owner || !dealer) {
+        toast.error('Missing car, owner, or dealer information.');
+        return;
+      }
+      const userId = typeof selectedCar.owner === 'object' ? selectedCar.owner._id : selectedCar.owner;
+      const payload = {
+        carId: selectedCar._id,
+        userId,
+        dealerId: dealer._id,
+        scheduledDate: new Date(`${scheduleForm.date}T${scheduleForm.time}`),
+        assignedEmployee: scheduleForm.assignedEmployee,
+        employeeContact: scheduleForm.employeeContact,
+        employeeDesignation: scheduleForm.employeeDesignation,
+        notes: scheduleForm.notes
+      };
+      console.log('Pickup create payload:', payload);
       await axios.post(
         'http://localhost:8000/pickup/create',
-        {
-          carId: selectedCar._id,
-          userId: selectedCar.owner._id,
-          dealerId: JSON.parse(localStorage.getItem('dealer'))._id,
-          scheduledDate: new Date(`${scheduleForm.date}T${scheduleForm.time}`),
-          assignedEmployee: scheduleForm.assignedEmployee,
-          employeeContact: scheduleForm.employeeContact, // Added employee contact
-          employeeDesignation: scheduleForm.employeeDesignation, // Added employee designation
-          notes: scheduleForm.notes // Added notes field
-        },
+        payload,
         { headers: { Authorization: `Bearer ${dealerToken}` } }
       );
       
@@ -73,7 +81,18 @@ export default function DealerPickupPage() {
       setShowScheduleModal(false);
       fetchVerifiedCars();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to schedule pickup');
+      // Enhanced error handling for duplicate pickup
+      if (
+        err.response?.status === 400 &&
+        err.response?.data?.message === 'Pickup already exists for this car'
+      ) {
+        toast.info('A pickup is already scheduled for this car.');
+        setShowScheduleModal(false);
+        fetchVerifiedCars();
+      } else {
+        console.error('Failed to create pickup:', err, err?.response?.data);
+        toast.error(err.response?.data?.message || 'Failed to schedule pickup');
+      }
     }
   };
 
@@ -128,53 +147,72 @@ export default function DealerPickupPage() {
                 </div>
               </div>
 
-              {/* Suggested Dates */}
-              {car.pickupDetails?.userSuggestedDates && car.pickupDetails.userSuggestedDates.length > 0 && (
+              {/* Pickup Details or Schedule Button */}
+              {car.pickupDetails ? (
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                   <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center gap-2">
                     <CalendarCheck className="w-4 h-4" />
-                    User's Preferred Dates
+                    Pickup Scheduled
                   </h3>
                   <div className="space-y-2">
-                    {car.pickupDetails.userSuggestedDates.map((date, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-blue-600">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(date).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric'
-                        })}
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <Calendar className="w-4 h-4" />
+                      {car.pickupDetails.scheduledDate ? new Date(car.pickupDetails.scheduledDate).toLocaleString() : 'Not scheduled'}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <UserCheck className="w-4 h-4" />
+                      {car.pickupDetails.assignedEmployee || 'Not assigned'}
+                    </div>
                   </div>
+                </div>
+              ) : (
+                <div className="mt-4 p-4 bg-yellow-50 rounded-lg flex items-center justify-between">
+                  <span className="text-yellow-800 text-sm">No pickup scheduled yet.</span>
+                  <button
+                    onClick={() => {
+                      setSelectedCar(car);
+                      setScheduleForm({
+                        date: '',
+                        time: '',
+                        assignedEmployee: '',
+                        employeeContact: '',
+                        employeeDesignation: '',
+                        notes: ''
+                      });
+                      setShowScheduleModal(true);
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Schedule Pickup
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Action Button */}
-            <div className="p-6 pt-0">
-              <button
-                onClick={() => {
-                  setSelectedCar(car);
-                  // Pre-fill form with user's first suggested date if available
-                  if (car.pickupDetails?.userSuggestedDates?.length > 0) {
-                    const suggestedDate = new Date(car.pickupDetails.userSuggestedDates[0]);
-                    setScheduleForm(prev => ({
-                      ...prev,
-                      date: suggestedDate.toISOString().split('T')[0],
-                      time: suggestedDate.toTimeString().slice(0,5)
-                    }));
-                  }
-                  setShowScheduleModal(true);
-                }}
-                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         transition-colors duration-200 flex items-center justify-center gap-2"
-              >
-                <Calendar className="w-5 h-5" />
-                Schedule Pickup
-              </button>
-            </div>
+            {/* Action Button (if pickup exists, allow reschedule) */}
+            {car.pickupDetails && (
+              <div className="p-6 pt-0">
+                <button
+                  onClick={() => {
+                    setSelectedCar(car);
+                    setScheduleForm({
+                      date: '',
+                      time: '',
+                      assignedEmployee: '',
+                      employeeContact: '',
+                      employeeDesignation: '',
+                      notes: ''
+                    });
+                    setShowScheduleModal(true);
+                  }}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-5 h-5" />
+                  Reschedule Pickup
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

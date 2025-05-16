@@ -96,12 +96,19 @@ export default function DealerDocumentsPage() {
       if (verifiedCount === 4) {
         try {
           const dealer = JSON.parse(localStorage.getItem('dealer'));
-          
-          await axios.post(`http://localhost:8000/pickup/create`, {
+          // Add required fields with default values
+          const pickupPayload = {
             carId: car._id,
             userId: car.owner._id || car.owner,
-            dealerId: dealer._id
-          }, {
+            dealerId: dealer._id,
+            scheduledDate: new Date(), // Default to now, or set as needed
+            assignedEmployee: 'Not Assigned',
+            employeeContact: '',
+            employeeDesignation: '',
+            notes: ''
+          };
+          console.log('Creating pickup with payload:', pickupPayload);
+          await axios.post(`http://localhost:8000/pickup/create`, pickupPayload, {
             headers: { 
               'Authorization': `Bearer ${dealerToken}`,
               'Content-Type': 'application/json'
@@ -109,13 +116,13 @@ export default function DealerDocumentsPage() {
           });
           toast.success('All documents verified and pickup created successfully!');
         } catch (err) {
-          console.error('Failed to create pickup:', err);
+          console.error('Failed to create pickup:', err, err?.response?.data);
           if (err.response?.status === 401) {
             toast.error('Your session has expired. Please login again.');
             window.location.href = '/dealer_login';
             return;
           } else if (err.response?.data?.message) {
-            toast.error(err.response.data.message);
+            toast.error('Failed to create pickup: ' + err.response.data.message);
           } else {
             toast.error('Failed to create pickup. Please try again.');
           }

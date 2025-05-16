@@ -5,7 +5,8 @@ import {
   userReschedulePickup,
   getUserPickups,
   getDealerPickups,
-  getPickupById
+  getPickupById,
+  getPickupByCarId
 } from '../controllers/pickup.controller.js';
 import { dealerAuth } from '../middleware/dealerAuth.middleware.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
@@ -29,5 +30,8 @@ router.get('/dealer', dealerAuth, getDealerPickups);
 
 // Get pickup by ID
 router.get('/:pickupId', authMiddleware, getPickupById);
+
+// Get pickup by carId
+router.get('/car/:carId', dealerAuth, getPickupByCarId);
 
 export default router;
