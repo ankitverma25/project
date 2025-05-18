@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Car, Calendar, Clock, CheckCircle, X, Phone, Mail, MapPin, User, ChevronDown, Search, Bell, Filter } from 'lucide-react';
+import { Car, Calendar, Clock, CheckCircle, X, Phone, Mail, MapPin, User, ChevronDown, Search, Bell, Filter, AlertTriangle } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const PickupPage = () => {
   // State variables
@@ -9,8 +10,11 @@ const PickupPage = () => {
   const [user, setUser] = useState(null);
   const [selectedPickup, setSelectedPickup] = useState(null);
   const [showReschedule, setShowReschedule] = useState(false);
-  const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
+  const [rescheduleForm, setRescheduleForm] = useState({
+    date: '',
+    time: '',
+    reason: ''
+  });
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,35 +39,48 @@ const PickupPage = () => {
     fetchPickups();
   }, []);
 
-  // Filter logic
-  const filteredPickups = pickups.filter(pickup =>
-    activeFilter === 'all' || pickup.status === activeFilter
-  );
+  const handleReschedule = async (e) => {
+    e.preventDefault();
+    if (!rescheduleForm.date || !rescheduleForm.time || !rescheduleForm.reason) {
+      toast.error('Please fill all required fields');
+      return;
+    }
 
-  // Reschedule handler (calls backend)
-  const handleReschedule = async () => {
-    if (!selectedPickup || !newDate || !newTime) return;
     try {
       const token = localStorage.getItem('token');
-      const pickupId = selectedPickup._id;
-      const newDateTime = new Date(`${newDate}T${newTime}`);
+      const newDateTime = new Date(`${rescheduleForm.date}T${rescheduleForm.time}`);
+      
+      if (newDateTime < new Date()) {
+        toast.error('Please select a future date and time');
+        return;
+      }
+
       await axios.put(
-        `http://localhost:8000/pickup/user-reschedule/${pickupId}`,
-        { newDates: [newDateTime] },
+        `http://localhost:8000/pickup/user-reschedule/${selectedPickup._id}`,
+        {
+          newDates: [newDateTime.toISOString()],
+          reason: rescheduleForm.reason
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      toast.success('Reschedule request submitted');
+      setShowReschedule(false);
+      setRescheduleForm({ date: '', time: '', reason: '' });
       // Refresh pickups
       const res = await axios.get('http://localhost:8000/pickup/user', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPickups(res.data);
-      setShowReschedule(false);
-      setNewDate('');
-      setNewTime('');
     } catch (err) {
       setError('Failed to reschedule pickup');
     }
   };
+
+  // Filter logic
+  const filteredPickups = pickups.filter(pickup =>
+    activeFilter === 'all' || pickup.status === activeFilter
+  );
 
   if (loading) return <div className="p-8 text-center">Loading pickups...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
@@ -162,15 +179,15 @@ const PickupPage = () => {
               <Calendar className="mr-2" />
               Reschedule Pickup
             </h2>
-            <div className="space-y-4">
+            <form onSubmit={handleReschedule} className="space-y-4">
               <div>
                 <label className="block mb-2">New Date</label>
                 <input
                   type="date"
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full p-2 border rounded"
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
+                  value={rescheduleForm.date}
+                  onChange={(e) => setRescheduleForm({ ...rescheduleForm, date: e.target.value })}
                 />
               </div>
               <div>
@@ -178,8 +195,17 @@ const PickupPage = () => {
                 <input
                   type="time"
                   className="w-full p-2 border rounded"
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
+                  value={rescheduleForm.time}
+                  onChange={(e) => setRescheduleForm({ ...rescheduleForm, time: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block mb-2">Reason for Reschedule</label>
+                <textarea
+                  className="w-full p-2 border rounded"
+                  rows="3"
+                  value={rescheduleForm.reason}
+                  onChange={(e) => setRescheduleForm({ ...rescheduleForm, reason: e.target.value })}
                 />
               </div>
               <div className="flex justify-end gap-3">
@@ -190,13 +216,13 @@ const PickupPage = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={handleReschedule}
+                  type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded"
                 >
                   Confirm
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

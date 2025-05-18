@@ -21,23 +21,33 @@ export default function DealerPickupPage() {
 
   useEffect(() => {
     fetchVerifiedCars();
-  }, []);
-  const fetchVerifiedCars = async () => {
+  }, []);  const fetchVerifiedCars = async () => {
     try {
       const dealerToken = localStorage.getItem('dealerToken');
+      // Get all cars with verified documents and accepted by this dealer
       const response = await axios.get('http://localhost:8000/car/verified-cars', {
         headers: { Authorization: `Bearer ${dealerToken}` }
       });
 
-      // For each car, get its pickup details if they exist
-      const carsWithPickups = await Promise.all(response.data.map(async (car) => {
+      // Filter cars that have all documents verified
+      const verifiedCars = response.data.filter(car => {
+        const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
+        return requiredDocs.every(doc => car.documents?.[doc]?.status === 'verified');
+      });
+
+      // For each verified car, get its pickup details if they exist
+      const carsWithPickups = await Promise.all(verifiedCars.map(async (car) => {
         try {
           const pickupResponse = await axios.get(`http://localhost:8000/pickup/car/${car._id}`, {
             headers: { Authorization: `Bearer ${dealerToken}` }
           });
           return { ...car, pickupDetails: pickupResponse.data };
         } catch (err) {
-          return { ...car, pickupDetails: null };
+          // If no pickup exists, that's fine
+          if (err.response?.status === 404) {
+            return { ...car, pickupDetails: null };
+          }
+          throw err;
         }
       }));
 
@@ -52,45 +62,72 @@ export default function DealerPickupPage() {
 
   const handleSchedulePickup = async (e) => {
     e.preventDefault();
+    
+    // Form validation
+    if (!scheduleForm.date || !scheduleForm.time || !scheduleForm.assignedEmployee || 
+        !scheduleForm.employeeContact || !scheduleForm.employeeDesignation) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
     try {
       const dealerToken = localStorage.getItem('dealerToken');
       const dealer = JSON.parse(localStorage.getItem('dealer'));
+      
       if (!selectedCar || !selectedCar.owner || !dealer) {
-        toast.error('Missing car, owner, or dealer information.');
+        toast.error('Missing required information');
         return;
       }
+
+      // Validate date/time
+      const scheduledDateTime = new Date(`${scheduleForm.date}T${scheduleForm.time}`);
+      if (scheduledDateTime < new Date()) {
+        toast.error('Please select a future date and time');
+        return;
+      }
+
       const userId = typeof selectedCar.owner === 'object' ? selectedCar.owner._id : selectedCar.owner;
-      const payload = {
+      const pickupData = {
         carId: selectedCar._id,
         userId,
         dealerId: dealer._id,
-        scheduledDate: new Date(`${scheduleForm.date}T${scheduleForm.time}`),
+        scheduledDate: scheduledDateTime.toISOString(),
         assignedEmployee: scheduleForm.assignedEmployee,
         employeeContact: scheduleForm.employeeContact,
         employeeDesignation: scheduleForm.employeeDesignation,
-        notes: scheduleForm.notes
+        notes: scheduleForm.notes,
+        reason: selectedCar.pickupDetails ? 'Rescheduled by dealer' : 'Initial schedule'
       };
-      console.log('Pickup create payload:', payload);
-      await axios.post(
-        'http://localhost:8000/pickup/create',
-        payload,
-        { headers: { Authorization: `Bearer ${dealerToken}` } }
-      );
-      
-      toast.success('Pickup scheduled successfully!');
-      setShowScheduleModal(false);
-      fetchVerifiedCars();
-    } catch (err) {
-      // Enhanced error handling for duplicate pickup
-      if (
-        err.response?.status === 400 &&
-        err.response?.data?.message === 'Pickup already exists for this car'
-      ) {
-        toast.info('A pickup is already scheduled for this car.');
-        setShowScheduleModal(false);
-        fetchVerifiedCars();
+
+      if (selectedCar.pickupDetails?._id) {
+        // Update existing pickup
+        await axios.put(
+          `http://localhost:8000/pickup/schedule/${selectedCar.pickupDetails._id}`,
+          pickupData,
+          { headers: { Authorization: `Bearer ${dealerToken}` } }
+        );
+        toast.success('Pickup rescheduled successfully');
       } else {
-        console.error('Failed to create pickup:', err, err?.response?.data);
+        // Create new pickup
+        await axios.post(
+          'http://localhost:8000/pickup/create',
+          pickupData,
+          { headers: { Authorization: `Bearer ${dealerToken}` } }
+        );
+        toast.success('Pickup scheduled successfully');
+      }
+
+      setShowScheduleModal(false);
+      fetchVerifiedCars(); // Refresh the list
+    } catch (err) {
+      console.error('Pickup scheduling error:', err);
+      
+      if (err.response?.status === 400 && 
+          err.response?.data?.message === 'Pickup already exists for this car') {
+        toast.info('A pickup is already scheduled for this car');
+      } else if (err.response?.status === 403) {
+        toast.error('Not authorized to schedule pickup for this car');
+      } else {
         toast.error(err.response?.data?.message || 'Failed to schedule pickup');
       }
     }
