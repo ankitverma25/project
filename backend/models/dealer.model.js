@@ -4,29 +4,35 @@ import bcrypt from 'bcryptjs';
 const dealerSchema = new mongoose.Schema({
   name: { 
     type: String, 
-    required: [true, "Dealer ka naam dalna zaroori hai"] 
+    required: [true, "required"] 
   },
   email: { 
     type: String, 
-    required: [true, "Email dalna zaroori hai"], 
+    required: [true, "Email required"], 
     unique: true 
   },
   password: { 
     type: String, 
-    required: [true, "Password dalna zaroori hai"] 
+
+    required: [true, "required"] 
+
   },
   businessName: { 
     type: String, 
-    required: [true, "Business ka naam dalna zaroori hai"] 
-  },
-  licenseNumber: { 
+    required: [true, "Business name required"] 
+  },  licenseNumber: { 
     type: String, 
-    required: [true, "License number dalna zaroori hai"] 
+    required: [true, "License number required"] 
   }, // Business license
+  phone: {
+    type: String,
+
+    required: [true, "Phone number required"],
+  },
   isApproved: { 
     type: Boolean, 
     default: false 
-  }, // Admin approve karega tabhi login kar payega
+  },// Admin approve karega tabhi login kar payega
   myBids: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Bid' 

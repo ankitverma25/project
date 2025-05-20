@@ -1,18 +1,54 @@
 'use client';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import axios from 'axios';
 
-const Contact = () => {
-  const [formData, setFormData] = useState({
+const Contact = () => {  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     message: '',
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.message.trim()) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    // Phone validation (basic)
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(formData.phone.replace(/[^\d]/g, ''))) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await axios.post('http://localhost:8000/contact/create', formData);
+      setShowSuccess(true);
+      setFormData({ name: '', email: '', phone: '', message: '' });
+      toast.success('Message sent successfully!');
+      setTimeout(() => setShowSuccess(false), 5000);
+    } catch (error) {
+      console.error('Contact form error:', error);
+      toast.error(error.response?.data?.message || 'Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,12 +134,21 @@ const Contact = () => {
                   className="w-full px-4 py-3 rounded-lg border-none bg-gray-100 focus:ring-2 focus:ring-green-500 h-32"
                   required
                 ></textarea>
-              </div>
-              <button
+              </div>              <button
                 type="submit"
-                className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                disabled={isSubmitting}
+                className={`w-full bg-green-500 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center
+                  ${isSubmitting ? 'bg-green-400 cursor-not-allowed' : 'hover:bg-green-600'}`}
               >
-                Send Message
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </>
+                ) : 'Send Message'}
               </button>
             </form>
             {showSuccess && (

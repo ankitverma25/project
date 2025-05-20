@@ -30,46 +30,120 @@ const dealerLogin = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         if (!dealer.isApproved) {
-            return res.status(403).json({ message: 'Dealer not approved by admin' });
-        }        const { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved } = dealer;
-        const payload = { _id, name, email: dealerEmail, businessName, licenseNumber, isApproved, role: 'dealer' };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3h' },
-            (err, token) => {
-                if (err) {
-                    res.status(500).json(err);
-                } else {
-                    res.status(200).json({ token, dealer: payload });
-                }
-            }
+            return res.status(401).json({ message: 'Your account is pending approval' });
+        }
+        const token = jwt.sign(
+            { _id: dealer._id, email: dealer.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
         );
+        res.status(200).json({ token, dealer: { ...dealer.toObject(), password: undefined } });
     } catch (err) {
-        res.status(500).json({ message: 'Server error', error: err });
+        res.status(500).json({ message: 'Login failed', error: err });
     }
 };
 
-// Get all pending dealers
+// Get all dealers (for admin)
+const getAllDealers = async (req, res) => {
+    try {
+        const dealers = await Dealer.find().select('-password');
+        res.status(200).json(dealers);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch dealers', error: err });
+    }
+};
+
+// Get pending dealers (for admin)
 const getPendingDealers = async (req, res) => {
     try {
-        const pendingDealers = await Dealer.find({ isApproved: false });
-        res.status(200).json(pendingDealers);
+        const dealers = await Dealer.find().select('-password');
+        res.status(200).json(dealers);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch pending dealers', error: err });
     }
 };
 
-// Approve a dealer
+// Approve dealer (admin only)
 const approveDealer = async (req, res) => {
     try {
         const dealer = await Dealer.findByIdAndUpdate(
             req.params.id,
             { isApproved: true },
             { new: true }
-        );
-        if (!dealer) return res.status(404).json({ message: 'Dealer not found' });
-        res.status(200).json({ message: 'Dealer approved successfully', dealer });
+        ).select('-password');
+        
+        if (!dealer) {
+            return res.status(404).json({ message: 'Dealer not found' });
+        }
+        
+        res.status(200).json({ 
+            message: 'Dealer approved successfully',
+            dealer 
+        });
     } catch (err) {
         res.status(500).json({ message: 'Failed to approve dealer', error: err });
     }
 };
 
-export { dealerSignup, dealerLogin, getPendingDealers, approveDealer };
+// Reject dealer (admin only)
+const rejectDealer = async (req, res) => {
+    try {
+        const dealer = await Dealer.findByIdAndUpdate(
+            req.params.id,
+            { isApproved: false },
+            { new: true }
+        ).select('-password');
+        
+        if (!dealer) {
+            return res.status(404).json({ message: 'Dealer not found' });
+        }
+        
+        res.status(200).json({ 
+            message: 'Dealer rejected successfully',
+            dealer 
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to reject dealer', error: err });
+    }
+};
+
+// Get dealer by ID
+const getDealerById = async (req, res) => {
+    try {
+        const dealer = await Dealer.findById(req.params.id).select('-password');
+        if (!dealer) {
+            return res.status(404).json({ message: 'Dealer not found' });
+        }
+        res.status(200).json(dealer);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch dealer', error: err });
+    }
+};
+
+// Delete dealer
+const deleteDealer = async (req, res) => {
+    try {
+        const dealer = await Dealer.findByIdAndDelete(req.params.id);
+        
+        if (!dealer) {
+            return res.status(404).json({ message: 'Dealer not found' });
+        }
+        
+        res.status(200).json({ 
+            message: 'Dealer deleted successfully'
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to delete dealer', error: err });
+    }
+};
+
+export {
+    dealerSignup,
+    dealerLogin,
+    getAllDealers,
+    getPendingDealers,
+    approveDealer,
+    rejectDealer,
+    getDealerById,
+    deleteDealer
+};

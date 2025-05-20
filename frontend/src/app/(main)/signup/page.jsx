@@ -5,9 +5,12 @@ import { ShieldCheck, Leaf, DollarSign, Clock, Quote, CheckCircle, Eye, EyeOff }
 import FloatingLabelInput from "@/components/FloatingLabelInput";
 import Backbar from '@/components/Backbar';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const Sign = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -15,8 +18,6 @@ const Sign = () => {
     password: '',
     confirmPassword: '',
   });
-
-  const [showSuccess, setShowSuccess] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
@@ -31,11 +32,11 @@ const Sign = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     if (!formData.fullName || !formData.email || !formData.phone || !formData.password) {
-      alert('All fields are required');
+      toast.error('All fields are required');
       return;
     }
     try {
@@ -45,19 +46,20 @@ const Sign = () => {
         phone: formData.phone,
         password: formData.password,
       });
-      setShowSuccess(true);
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-      });
+      
+      toast.success('Registration successful! Redirecting to login...');
+      
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+      
     } catch (err) {
-      if (err.response && err.response.data) {
-        alert(err.response.data.message || JSON.stringify(err.response.data));
+      if (err.response?.data?.code === 11000 || err.response?.data?.errorResponse?.code === 11000) {
+        toast.error('This email is already registered. Please use a different email or login.');
+      } else if (err.response && err.response.data) {
+        toast.error(err.response.data.message || 'Signup failed');
       } else {
-        alert('Signup failed');
+        toast.error('Something went wrong. Please try again.');
       }
     }
   };
@@ -228,12 +230,16 @@ const Sign = () => {
                 >
                   Create Account
                 </button>
-              </form>
+              </form>              <div className="mt-2 text-center text-gray-500 text-sm">
+                <Link href="/login" className="text-emerald-600 hover:underline">
+                  already have account?
+                </Link>
+              </div>
               <div className="mt-2 text-center text-gray-500 text-sm">
-              <Link href="/login" className="text-emerald-600 hover:underline">
-              already have account? 
-                  </Link></div>
-
+                <Link href="/dealer_signup" className="text-emerald-600 hover:underline">
+                  are you dealer?
+                </Link>
+              </div>
               <div className="mt-2 text-center text-gray-500 text-sm">
                 <p>By signing up, you agree to our</p>
                 <div className="mt-1">
@@ -295,44 +301,7 @@ const Sign = () => {
             ))}
           </div>
         </motion.div>
-      </div>
-
-      {/* Success Modal */}
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl border border-gray-100"
-            >
-              <div className="text-center">
-                <CheckCircle className="w-16 h-16 text-emerald-500 mb-4 mx-auto" />
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                  Registration Successful!
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Thank you for joining Revivo. We'll contact you shortly to
-                  proceed with your car recycling process.
-                </p>
-                <button
-                  onClick={() => setShowSuccess(false)}
-                  className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors font-medium"
-                >
-                  Continue
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      </div>    </div>
   );
 };
 

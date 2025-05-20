@@ -6,6 +6,7 @@ import * as echarts from "echarts";
 import{CircleCheckBig, Facebook, FacebookIcon, Instagram, Linkedin, LocateIcon, MapPin, MessageCircle, MessageSquareLock, Phone, Twitter, TwitterIcon} from 'lucide-react'
 import { IconCurrentLocation } from '@tabler/icons-react';
 import Navbar from '@/app/Navbar';
+import Link from 'next/link';
 
 
 const About = () => {
@@ -73,12 +74,10 @@ const About = () => {
                   environmental stewardship.
                 </p>
                 <div className="flex gap-4">
-                  <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer whitespace-nowrap">
+                  <Link to="/signup" ><button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer whitespace-nowrap">
                     Join Our Mission
-                  </button>
-                  <button className="px-6 py-3 bg-white text-gray-900 rounded-lg hover:bg-gray-100 cursor-pointer whitespace-nowrap">
-                    Learn More
-                  </button>
+                    
+                  </button></Link>
                 </div>
               </motion.div>
             </div>

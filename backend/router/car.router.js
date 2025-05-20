@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express from 'express';
 import { 
   addCar, 
   getAllCars, 
@@ -12,40 +12,32 @@ import {
   getVerifiedCars
 } from "../controllers/car.controller.js";
 import upload from '../middleware/multer.middleware.js';
-import { authMiddleware, dealerAuth } from '../middleware/auth.middleware.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { dealerAuth } from '../middleware/dealerAuth.middleware.js';
+import adminAuth from '../middleware/adminAuth.middleware.js';
 import universalAuth from '../middleware/universalAuth.middleware.js';
 
-const router = Router();   
+const router = express.Router();
 
-// Existing routes
-router.route('/addCar').post(authMiddleware, upload.fields([
+// Admin routes
+router.get('/allCars', adminAuth, getAllCars);
+
+// Protected routes
+router.post('/addCar', authMiddleware, upload.fields([
   { name: 'photos', maxCount: 5 },
   { name: 'rcBook', maxCount: 1 }
 ]), addCar);
 
-router.route('/allCars').get(universalAuth, getAllCars);
-
 // Document management routes
-router.route('/upload-document').post(
-  authMiddleware, 
-  upload.single('document'), 
-  uploadDocument
-);
-
-router.route('/accept-terms').post(authMiddleware, acceptTerms);
-router.route('/submit-documents').post(authMiddleware, submitDocuments);
+router.post('/upload-document', authMiddleware, upload.single('document'), uploadDocument);
+router.post('/accept-terms', authMiddleware, acceptTerms);
+router.post('/submit-documents', authMiddleware, submitDocuments);
 
 // Dealer document verification routes
 router.get('/submitted-documents', dealerAuth, getSubmittedDocuments);
 router.post('/verify-document', dealerAuth, verifyDocument);
-
-// Final verification route
 router.post('/verify-final', dealerAuth, verifyFinal);
-
-// Mark car ready for pickup
 router.post('/mark-ready-for-pickup/:carId', dealerAuth, markReadyForPickup);
-
-// Get verified cars ready for pickup
 router.get('/verified-cars', dealerAuth, getVerifiedCars);
 
 export default router;
