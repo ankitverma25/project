@@ -15,7 +15,7 @@ import upload from '../middleware/multer.middleware.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { dealerAuth } from '../middleware/dealerAuth.middleware.js';
 import adminAuth from '../middleware/adminAuth.middleware.js';
-import universalAuth from '../middleware/universalAuth.middleware.js';
+import { universalAuth } from '../middleware/universalAuth.middleware.js';
 
 const router = express.Router();
 

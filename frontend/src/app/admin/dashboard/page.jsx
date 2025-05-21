@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
     const token = checkAuth();
     if (!token) return;
 
-    try {
+    try {      // Use admin_token consistently for all admin requests
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

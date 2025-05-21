@@ -1,14 +1,15 @@
 import Link from 'next/link';
-import { Home, Car, Coins, Calendar, Scale, Leaf } from 'lucide-react';
+import { Home, Car, Coins, Calendar, Scale, Leaf, Settings, Package } from 'lucide-react';
 
 const userLinks = [
   { href: '/user/dashboard', label: 'Dashboard', icon: Home },
   { href: '/user/new-request', label: 'New Request', icon: Car },
   { href: '/user/bids', label: 'Bids', icon: Coins },
   { href: '/user/pickup', label: 'Pickup', icon: Calendar },
+  { href: '/user/parts', label: 'Car Parts', icon: Package },
   { href: '/user/legal', label: 'Legal', icon: Scale },
   { href: '/user/eco-impact', label: 'Eco Impact', icon: Leaf },
-  { href: '/user/settings', label: 'Settings' },
+  { href: '/user/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function UserSidebar() {
