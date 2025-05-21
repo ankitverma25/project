@@ -74,7 +74,7 @@ const About = () => {
                   environmental stewardship.
                 </p>
                 <div className="flex gap-4">
-                  <Link to="/signup" ><button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer whitespace-nowrap">
+                  <Link href="/signup" ><button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer whitespace-nowrap">
                     Join Our Mission
                     
                   </button></Link>

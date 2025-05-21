@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import React from 'react'
 
 const Auction = () => {
@@ -38,9 +39,11 @@ const Auction = () => {
                 <span className="text-gray-600">Time Left</span>
                 <span className="text-red-600">2h 15m</span>
               </div>
+              <Link href='/dealer_login'>
               <button className="mx-auto p-2 rounded-2xl py-2 bg-gray-100 text-gray-700 !rounded-button hover:bg-gray-200 cursor-pointer">
                 Login to Bid
               </button>
+              </Link>
             </div>
           </div>
         ))}
