@@ -1,10 +1,23 @@
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
+const statusChangeSchema = new Schema({
+  from: { type: String, enum: ['pending', 'ready-for-pickup', 'scheduled', 'completed', 'cancelled'] },
+  to: { type: String, enum: ['pending', 'ready-for-pickup', 'scheduled', 'completed', 'cancelled'] },
+  by: { type: String, enum: ['user', 'dealer', 'system'] },
+  reason: { type: String },
+  timestamp: { type: Date, default: Date.now }
+});
+
 const rescheduleSchema = new Schema({
   by: { type: String, enum: ['user', 'dealer'], required: true },
   date: { type: Date, required: true },
   reason: { type: String },
+  employeeInfo: {
+    name: String,
+    contact: String,
+    designation: String
+  },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -18,6 +31,7 @@ const pickupSchema = new Schema({
   employeeContact: { type: String },
   employeeDesignation: { type: String },
   notes: { type: String },
+  statusHistory: [statusChangeSchema],
   rescheduleHistory: [rescheduleSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

@@ -13,7 +13,6 @@ const dealerSchema = new mongoose.Schema({
   },
   password: { 
     type: String, 
-
     required: [true, "required"] 
 
   },
@@ -28,6 +27,10 @@ const dealerSchema = new mongoose.Schema({
     type: String,
 
     required: [true, "Phone number required"],
+  },
+  avatar: {
+    type: String,
+    default: '/avatar-placeholder.png'
   },
   isApproved: { 
     type: Boolean, 

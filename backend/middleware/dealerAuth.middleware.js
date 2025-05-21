@@ -3,9 +3,17 @@ import Dealer from '../models/dealer.model.js';
 
 export const dealerAuth = async (req, res, next) => {
   try {
-    const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'No authorization header found' });
+    }
+
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+    if (!token) {
+      return res.status(401).json({ message: 'No token found' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check if token belongs to a dealer
     if (decoded.role !== 'dealer') {

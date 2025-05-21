@@ -17,11 +17,11 @@ export default function DealerBidCarsPage() {
 
   useEffect(() => {
     let dealer = null;
-    let t = "";
-    if (typeof window !== "undefined") {
+    let t = "";    if (typeof window !== "undefined") {
       try {
         dealer = JSON.parse(localStorage.getItem("dealer"));
-        t = localStorage.getItem("token") || "";
+        // Use dealerToken instead of token
+        t = localStorage.getItem("dealerToken") || "";
         setDealerId(dealer?._id || "");
         setToken(t);
       } catch {}
@@ -51,10 +51,10 @@ export default function DealerBidCarsPage() {
     if (!bidAmount[carId] || isNaN(Number(bidAmount[carId]))) return;
     setPlacingBid(carId);
     setSuccessMsg("");
-    setError("");
-    try {
+    setError("");    try {
+      const dealerToken = localStorage.getItem('dealerToken');
       await axios.post("http://localhost:8000/bid/add", { car: carId, amount: bidAmount[carId] }, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${dealerToken}` },
       });
       setSuccessMsg("Bid placed successfully!");
       setCars((prev) => prev.filter((car) => car._id !== carId));

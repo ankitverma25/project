@@ -31,9 +31,13 @@ const dealerLogin = async (req, res) => {
         }
         if (!dealer.isApproved) {
             return res.status(401).json({ message: 'Your account is pending approval' });
-        }
-        const token = jwt.sign(
-            { _id: dealer._id, email: dealer.email },
+        }        const token = jwt.sign(
+            { 
+                _id: dealer._id, 
+                email: dealer.email,
+                role: 'dealer',
+                isDealer: true
+            },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );

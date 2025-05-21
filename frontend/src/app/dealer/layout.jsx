@@ -5,12 +5,23 @@ import DealerSidebar from '@/components/DealerSidebar';
 
 export default function DealerLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
+  
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
       <DealerSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      <div className={"transition-all duration-300 " + (collapsed ? "md:ml-20" : "md:ml-64")}> 
-        <main className="p-4 md:p-6">{children}</main>
-      </div>
+      
+      {/* Main Content Area */}
+      <main 
+        className={`
+          flex-1 min-h-screen transition-all duration-300 ease-in-out
+          ${collapsed ? 'md:ml-20' : 'md:ml-64'}
+        `}
+      >
+        <div className="p-6 max-w-7xl mx-auto">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

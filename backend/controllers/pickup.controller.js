@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Pickup from '../models/pickup.model.js';
 import Car from '../models/car.model.js';
 
@@ -11,15 +12,6 @@ export const createPickup = async (req, res) => {
       return res.status(400).json({ 
         message: 'Missing required fields',
         required: { carId, userId, dealerId },
-      });
-    }
-
-    // Check if pickup already exists for this car
-    const existingPickup = await Pickup.findOne({ car: carId });
-    if (existingPickup) {
-      return res.status(400).json({ 
-        message: 'Pickup already exists for this car',
-        pickup: existingPickup
       });
     }    // Check if car exists and dealer is authorized
     const car = await Car.findById(carId);
@@ -38,35 +30,62 @@ export const createPickup = async (req, res) => {
     );
     if (!allVerified) {
       return res.status(400).json({ message: 'All car documents must be verified before creating pickup' });
-    }
+    }    // Start transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    const pickup = new Pickup({
-      car: carId,
-      user: userId,
-      dealer: dealerId,
-      status: scheduledDate ? 'scheduled' : 'pending',
-      scheduledDate: scheduledDate || undefined,
-      assignedEmployee: assignedEmployee || undefined,
-      employeeContact: employeeContact || undefined,
-      employeeDesignation: employeeDesignation || undefined,
-      notes: notes || undefined,
-    });    console.log('Creating new pickup:', pickup);    
-    const savedPickup = await pickup.save();
-    
-    // Mark car as pickup created
-    await Car.findByIdAndUpdate(carId, { 
-      pickupCreated: true,
-      readyForPickup: true 
-    });
+    try {
+      const pickup = new Pickup({
+        car: carId,
+        user: userId,
+        dealer: dealerId,
+        status: scheduledDate ? 'scheduled' : 'pending',
+        scheduledDate: scheduledDate || undefined,
+        assignedEmployee: assignedEmployee || undefined,
+        employeeContact: employeeContact || undefined,
+        employeeDesignation: employeeDesignation || undefined,
+        notes: notes || undefined,
+      });
+
+      console.log('Creating new pickup:', pickup);
+      const savedPickup = await pickup.save({ session });
+      
+      // Mark car as pickup created
+      await Car.findByIdAndUpdate(carId, { 
+        pickupCreated: true,
+        readyForPickup: true 
+      }, { session });
+
+      await session.commitTransaction();
+      
+      // After successful transaction, populate the response
+      const populatedPickup = await Pickup.findById(savedPickup._id)
+        .populate('car')
+        .populate('user')
+        .populate('dealer');
+      
+      res.status(201).json(populatedPickup);
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
+    }
 
     const populatedPickup = await Pickup.findById(savedPickup._id)
       .populate('car')
       .populate('user')
       .populate('dealer');
-    res.status(201).json(populatedPickup);
-  } catch (err) {
+    res.status(201).json(populatedPickup);  } catch (err) {
     console.error('Create pickup error:', err);
-    res.status(500).json({ message: err.message });
+    if (err.code === 11000) {
+      res.status(400).json({ message: 'Pickup already exists for this car' });
+    } else {
+      res.status(500).json({ 
+        message: 'Failed to create pickup',
+        error: err.message 
+      });
+    }
   }
 };
 
@@ -74,14 +93,18 @@ export const createPickup = async (req, res) => {
 export const schedulePickup = async (req, res) => {
   try {
     const { pickupId } = req.params;
-    const { scheduledDate, assignedEmployee, employeeContact, employeeDesignation, notes, reason } = req.body;
-
-    // Validate required fields
+    const { scheduledDate, assignedEmployee, employeeContact, employeeDesignation, notes, reason } = req.body;    // Validate required fields
     if (!scheduledDate || !assignedEmployee || !employeeContact || !employeeDesignation) {
       return res.status(400).json({ 
         message: 'Missing required fields',
         required: { scheduledDate, assignedEmployee, employeeContact, employeeDesignation }
       });
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(employeeContact.replace(/[- ]/g, ''))) {
+      return res.status(400).json({ message: 'Invalid phone number format. Please enter a 10-digit number.' });
     }
 
     const pickup = await Pickup.findById(pickupId);
@@ -92,34 +115,65 @@ export const schedulePickup = async (req, res) => {
     // Verify dealer is authorized
     if (pickup.dealer.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to schedule this pickup' });
+    }    // Allow dealer to reschedule if status is not 'completed' or 'cancelled'
+    if (['completed', 'cancelled'].includes(pickup.status)) {
+      return res.status(400).json({ message: 'Cannot reschedule completed or cancelled pickups' });
     }
 
-    // Allow dealer to reschedule if status is 'pending', 'scheduled', or 'ready-for-pickup'
-    if (!['pending', 'scheduled', 'ready-for-pickup'].includes(pickup.status)) {
-      return res.status(400).json({ message: 'Pickup not ready for scheduling. Current status: ' + pickup.status });
+    // Validate new schedule date is in the future
+    const newScheduleDate = new Date(scheduledDate);
+    if (newScheduleDate < new Date()) {
+      return res.status(400).json({ message: 'Scheduled date must be in the future' });
     }
 
-    // Add to reschedule history if date changes
-    if (pickup.scheduledDate && scheduledDate && new Date(pickup.scheduledDate).getTime() !== new Date(scheduledDate).getTime()) {
-      pickup.rescheduleHistory.push({ 
-        by: 'dealer', 
-        date: new Date(scheduledDate), 
-        reason: reason || 'Rescheduled by dealer' 
-      });
+    // Add to reschedule history
+    pickup.rescheduleHistory.push({ 
+      by: 'dealer', 
+      date: newScheduleDate, 
+      reason: reason || 'Rescheduled by dealer',
+      employeeInfo: {
+        name: assignedEmployee,
+        contact: employeeContact,
+        designation: employeeDesignation
+      }
+    });    // Start transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const oldStatus = pickup.status;
+      
+      // Update pickup details
+      pickup.scheduledDate = new Date(scheduledDate);
+      pickup.assignedEmployee = assignedEmployee;
+      pickup.employeeContact = employeeContact;
+      pickup.employeeDesignation = employeeDesignation;
+      if (notes) pickup.notes = notes;
+      pickup.status = 'scheduled';
+
+      // Track status change
+      if (oldStatus !== 'scheduled') {
+        pickup.statusHistory.push({
+          from: oldStatus,
+          to: 'scheduled',
+          by: 'dealer',
+          reason: reason || `Pickup ${oldStatus === 'pending' ? 'scheduled' : 'rescheduled'} by dealer`,
+          timestamp: new Date()
+        });
+      }
+
+      await pickup.save({ session });
+
+      // Update car status
+      await Car.findByIdAndUpdate(pickup.car, { readyForPickup: true }, { session });
+
+      await session.commitTransaction();
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
     }
-
-    // Update pickup details
-    pickup.scheduledDate = new Date(scheduledDate);
-    pickup.assignedEmployee = assignedEmployee;
-    pickup.employeeContact = employeeContact;
-    pickup.employeeDesignation = employeeDesignation;
-    if (notes) pickup.notes = notes;
-    pickup.status = 'scheduled';
-
-    await pickup.save();
-
-    // Update car status
-    await Car.findByIdAndUpdate(pickup.car, { readyForPickup: true });
 
     // Populate for response consistency
     const populatedPickup = await Pickup.findById(pickup._id)
@@ -228,5 +282,81 @@ export const getPickupByCarId = async (req, res) => {
     res.json(pickup);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// Mark pickup as completed
+export const completePickup = async (req, res) => {
+  try {
+    const { pickupId } = req.params;
+    const { notes } = req.body;
+
+    const pickup = await Pickup.findById(pickupId);
+    if (!pickup) {
+      return res.status(404).json({ message: 'Pickup not found' });
+    }
+
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Update pickup status
+      pickup.status = 'completed';
+      pickup.notes = notes || pickup.notes;
+      pickup.statusHistory.push({
+        from: pickup.status,
+        to: 'completed',
+        by: 'dealer',
+        reason: 'Pickup completed by dealer',
+        timestamp: new Date()
+      });
+      
+      await pickup.save({ session });
+
+      // Update car status
+      await Car.findByIdAndUpdate(pickup.car, 
+        { status: 'closed' }, 
+        { session }
+      );
+
+      await session.commitTransaction();
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
+    }
+
+    // Populate for response
+    const populatedPickup = await Pickup.findById(pickupId)
+      .populate('car')
+      .populate('user')
+      .populate('dealer');
+
+    res.json({
+      success: true,
+      message: 'Pickup marked as completed',
+      pickup: populatedPickup
+    });
+
+  } catch (err) {
+    console.error('Complete pickup error:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Check if pickup exists for a car
+export const checkPickupExists = async (req, res) => {
+  try {
+    const { carId } = req.params;
+    const existingPickup = await Pickup.findOne({ car: carId });
+    return res.status(200).json({ 
+        exists: !!existingPickup,
+        pickup: existingPickup
+    });
+  } catch (error) {
+    console.error('Error checking pickup existence:', error);
+    return res.status(500).json({ message: 'Failed to check pickup status' });
   }
 };

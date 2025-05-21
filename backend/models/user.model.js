@@ -18,10 +18,9 @@ const userSchema=new mongoose.Schema({
       },      phone: { 
         type: String, 
         required: [true, "Phone number dalna zaroori hai"] 
-      },
-      avatar: { 
-        type: String 
-        
+      },      avatar: { 
+        type: String,
+        default: '/avatar-placeholder.png'
       }, // Profile photo URL
       myCars: [{ 
         type: mongoose.Schema.Types.ObjectId, 

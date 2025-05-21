@@ -19,8 +19,8 @@ import universalAuth from '../middleware/universalAuth.middleware.js';
 
 const router = express.Router();
 
-// Admin routes
-router.get('/allCars', adminAuth, getAllCars);
+// Universal routes
+router.get('/allCars', universalAuth, getAllCars);
 
 // Protected routes
 router.post('/addCar', authMiddleware, upload.fields([

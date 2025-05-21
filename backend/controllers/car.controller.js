@@ -265,10 +265,31 @@ const verifyDocument = async (req, res) => {
     const car = await Car.findById(carId);
     if (!car) return res.status(404).json({ message: 'Car not found' });
     if (!car.documents[docKey]) return res.status(404).json({ message: 'Document not found' });
-    car.documents[docKey].status = status;
-    if (status === 'verified') {
+    car.documents[docKey].status = status;    if (status === 'verified') {
       car.documents[docKey].verifiedAt = new Date();
       car.documents[docKey].rejectionMessage = undefined;
+      
+      // Check if all documents are verified
+      const allVerified = ['idProof', 'insurance', 'pollution', 'addressProof'].every(
+        key => car.documents[key]?.status === 'verified'
+      );
+      
+      if (allVerified) {
+        car.documentStatus = 'verified';
+        car.readyForPickup = true;
+        
+        // Create pickup if it doesn't exist
+        const existingPickup = await Pickup.findOne({ car: car._id });
+        if (!existingPickup) {
+          const pickup = new Pickup({
+            car: car._id,
+            user: car.owner,
+            dealer: req.dealer._id,
+            status: 'pending'
+          });
+          await pickup.save();
+        }
+      }
     } else if (status === 'rejected') {
       car.documents[docKey].rejectionMessage = rejectionMessage || '';
       car.documents[docKey].verifiedAt = undefined;
@@ -304,9 +325,7 @@ const verifyFinal = async (req, res) => {
     // Check if dealer is authorized (their bid was accepted)
     if (car.acceptedDealer.toString() !== dealerId.toString()) {
       return res.status(403).json({ message: 'Not authorized to verify this car' });
-    }
-
-    // Check if all documents are verified
+    }    // Check if all documents are verified
     const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
     const allVerified = requiredDocs.every(docKey => 
       car.documents?.[docKey]?.status === 'verified'
@@ -315,6 +334,13 @@ const verifyFinal = async (req, res) => {
     if (!allVerified) {
       return res.status(400).json({ message: 'All documents must be verified first' });
     }
+
+    console.log('All documents verified for car:', {
+      carId: car._id,
+      model: car.model,
+      currentStatus: car.documentStatus,
+      readyForPickup: car.readyForPickup
+    });
 
     // Start a transaction
     const session = await mongoose.startSession();
@@ -325,7 +351,9 @@ const verifyFinal = async (req, res) => {
       car.documentStatus = 'verified';
       await car.save({ session });
 
-      // Create a new pickup entry
+      // Create a new pickup entry    // Only create pickup if it doesn't exist
+    const existingPickup = await Pickup.findOne({ car: carId });
+    if (!existingPickup) {
       const pickup = new Pickup({
         car: carId,
         user: car.owner._id,
@@ -333,6 +361,7 @@ const verifyFinal = async (req, res) => {
         status: 'pending'
       });
       await pickup.save({ session });
+    }
 
       await session.commitTransaction();
       res.status(200).json({ 
@@ -356,26 +385,75 @@ const verifyFinal = async (req, res) => {
 const getVerifiedCars = async (req, res) => {
   try {
     const dealerId = req.dealer._id;
-
-    // Find cars where:
+    console.log('Fetching verified cars for dealer:', dealerId);    // Find cars where:
     // 1. This dealer's bid is accepted
-    // 2. Documents are verified
-    // 3. Pickup is not created yet
+    // 2. Documents are verified OR all individual documents are verified
     const cars = await Car.find({
       acceptedDealer: dealerId,
-      documentStatus: 'verified'
+      $or: [
+        { documentStatus: 'verified' },
+        {
+          'documents.idProof.status': 'verified',
+          'documents.insurance.status': 'verified',
+          'documents.pollution.status': 'verified',
+          'documents.addressProof.status': 'verified'
+        }
+      ]
     })
-    .populate('owner', 'name email phone')
+    .populate('owner', 'name email phone address')
     .populate({
       path: 'bids',
       match: { dealer: dealerId, status: 'accepted' }
     });
 
-    // Filter out cars that already have pickups
-    const pickups = await Pickup.find({ dealer: dealerId }).distinct('car');
-    const availableCars = cars.filter(car => !pickups.includes(car._id));
+    // Get all pickups for these cars
+    const pickups = await Pickup.find({
+      car: { $in: cars.map(car => car._id) }
+    }).lean();    // Add pickup info to cars and log for debugging
+    const carsWithPickups = await Promise.all(cars.map(async car => {
+      const pickup = pickups.find(p => p.car.toString() === car._id.toString());
+        // Check if all documents are verified
+      const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
+      const allDocsVerified = requiredDocs.every(docKey => 
+        car.documents?.[docKey]?.status === 'verified'
+      );
 
-    res.status(200).json(availableCars);
+      // If all docs are verified but no pickup exists, create one
+      if (allDocsVerified && !pickup) {
+        // Handle both populated and unpopulated owner cases
+        const ownerId = car.owner._id || car.owner;
+
+        const newPickup = new Pickup({
+          car: car._id,
+          user: ownerId,
+          dealer: dealerId,
+          status: 'pending'
+        });
+        await newPickup.save();
+        console.log('Created new pickup for car:', car.model);
+        return {
+          ...car.toObject(),
+          pickupDetails: newPickup
+        };
+      }
+
+      console.log('Car:', {
+        id: car._id,
+        model: car.model,
+        documentStatus: car.documentStatus,
+        readyForPickup: car.readyForPickup,
+        hasPickup: !!pickup
+      });
+      
+      return {
+        ...car.toObject(),
+        pickupDetails: pickup || null
+      };
+    }));
+
+    console.log('Total cars found:', carsWithPickups.length);
+
+    res.status(200).json(carsWithPickups);
   } catch (err) {
     console.error('Error fetching verified cars:', err);
     res.status(500).json({ message: 'Failed to fetch verified cars', error: err.message });
@@ -398,8 +476,7 @@ const markReadyForPickup = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to mark this car as ready' });
     }
 
-    // Check if all documents are verified
-    const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
+    // Check if all documents are verified    const requiredDocs = ['idProof', 'insurance', 'pollution', 'addressProof'];
     const allVerified = requiredDocs.every(docKey => 
       car.documents?.[docKey]?.status === 'verified'
     );
@@ -408,10 +485,32 @@ const markReadyForPickup = async (req, res) => {
       return res.status(400).json({ message: 'All documents must be verified first' });
     }
 
-    // Update car status
-    car.documentStatus = 'verified';
-    car.readyForPickup = true;
-    await car.save();
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Update car status
+      car.documentStatus = 'verified';
+      car.readyForPickup = true;
+      await car.save({ session });
+
+      // Create a pending pickup entry automatically
+      const pickup = new Pickup({
+        car: carId,
+        user: car.owner,
+        dealer: req.dealer._id,
+        status: 'pending'
+      });
+      await pickup.save({ session });
+
+      await session.commitTransaction();
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
+    }
 
     res.status(200).json({ 
       success: true,

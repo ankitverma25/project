@@ -107,13 +107,7 @@ export default function UserSettingsPage() {
         <input type="password" placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-2 border rounded mb-2" />
         <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Change Password</button>
       </form>
-      <div className="mb-6">
-        <label className="block text-sm font-medium mb-1">Notifications</label>
-        <label className="inline-flex items-center">
-          <input type="checkbox" checked={notif} onChange={() => setNotif(!notif)} className="form-checkbox" />
-          <span className="ml-2">Enable email notifications</span>
-        </label>
-      </div>
+
       <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded">Logout</button>
       {success && <div className="text-green-600 mt-4">{success}</div>}
       {error && <div className="text-red-600 mt-4">{error}</div>}
