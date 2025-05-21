@@ -54,10 +54,14 @@ export default function DealerPickupPage() {
     notes: ''
   });
   const [completingPickup, setCompletingPickup] = useState(null);
-
   useEffect(() => {
     fetchVerifiedCars();
-  }, []);  const fetchVerifiedCars = async () => {
+  }, []);
+
+  // Add modal state change logging
+  useEffect(() => {
+    console.log('Modal state changed:', { showScheduleModal, selectedCar });
+  }, [showScheduleModal, selectedCar]);const fetchVerifiedCars = async () => {
     try {
       const rawToken = localStorage.getItem('dealerToken');
       const dealer = JSON.parse(localStorage.getItem('dealer'));
@@ -112,9 +116,14 @@ export default function DealerPickupPage() {
     }
   };  const handleSchedulePickup = async (e) => {
     e.preventDefault();
+    console.log('Form submitted with values:', scheduleForm);
     
-    if (submitting) return; // Prevent multiple submissions
+    if (submitting) {
+      console.log('Already submitting, preventing duplicate submission');
+      return;
+    }
     setSubmitting(true);
+    console.log('Starting pickup scheduling process...');
     
     let toastId; // Declare toastId at function scope so it's available in catch block
     
@@ -180,11 +189,11 @@ export default function DealerPickupPage() {
         toast.error('Please select a future date and time');
         setSubmitting(false);
         return;
-      }
-
-      // Validate business hours (8 AM to 6 PM)
+      }      // Validate business hours (8 AM to 6 PM)
       const hour = scheduledDateTime.getHours();
+      console.log('Validating time:', { hour, scheduledTime: scheduleForm.time });
       if (hour < 8 || hour >= 18) {
+        console.log('Time validation failed - outside business hours');
         toast.error('Please select a time between 8:00 AM and 6:00 PM');
         setSubmitting(false);
         return;
@@ -236,19 +245,26 @@ export default function DealerPickupPage() {
         notes: scheduleForm.notes || undefined,
         reason: selectedCar.pickupDetails ? 'Rescheduled by dealer' : undefined
       };
+      console.log('About to make API call with data:', { pickupData, dealer, selectedCar });
       
       // Show loading toast
       toastId = toast.loading(
         selectedCar.pickupDetails ? 'Rescheduling pickup...' : 'Scheduling pickup...'
-      );
-      
-      if (selectedCar.pickupDetails?._id) {
+      );      if (selectedCar.pickupDetails?._id) {
         // Update existing pickup
+        console.log('Request details:', {
+          url: `http://localhost:8000/pickup/schedule/${selectedCar.pickupDetails._id}`,
+          method: 'PUT',
+          headers: { Authorization: dealerToken },
+          data: pickupData,
+          selectedCar
+        });
         const response = await axios.put(
           `http://localhost:8000/pickup/schedule/${selectedCar.pickupDetails._id}`,
           pickupData,
           { headers: { Authorization: `Bearer ${dealerToken}` } }
         );
+        console.log('Update pickup response:', response.data);
         
         if (response.data) {
           toast.update(toastId, {
@@ -259,14 +275,21 @@ export default function DealerPickupPage() {
           });
         } else {
           throw new Error('No data received from server');
-        }
-      } else {
+        }      } else {
         // Create new pickup
+        console.log('Request details:', {
+          url: 'http://localhost:8000/pickup/create',
+          method: 'POST',
+          headers: { Authorization: dealerToken },
+          data: pickupData,
+          selectedCar
+        });
         const response = await axios.post(
           'http://localhost:8000/pickup/create',
           pickupData,
           { headers: { Authorization: `Bearer ${dealerToken}` } }
         );
+        console.log('Create pickup response:', response.data);
         
         if (response.data) {
           toast.update(toastId, {
@@ -278,10 +301,8 @@ export default function DealerPickupPage() {
         } else {
           throw new Error('No data received from server');
         }
-      }
-
-      setShowScheduleModal(false);
-      fetchVerifiedCars(); // Refresh the list
+      }      await fetchVerifiedCars(); // Refresh the list first
+      setShowScheduleModal(false); // Close modal after refresh
 
     } catch (err) {
       console.error('Pickup scheduling error:', err);
@@ -457,8 +478,8 @@ export default function DealerPickupPage() {
               ) : (
                 <div className="mt-4 p-4 bg-yellow-50 rounded-lg flex items-center justify-between">
                   <span className="text-yellow-800 text-sm">No pickup scheduled yet.</span>
-                  <button
-                    onClick={() => {
+                  <button                    onClick={() => {
+                      console.log('Schedule button clicked for car:', car);
                       setSelectedCar(car);
                       setScheduleForm({
                         date: '',
@@ -468,9 +489,10 @@ export default function DealerPickupPage() {
                         employeeDesignation: '',
                         notes: ''
                       });
+                      console.log('Opening schedule modal...');
                       setShowScheduleModal(true);
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2 transition-colors"
                   >
                     <Calendar className="w-4 h-4" />
                     Schedule Pickup
@@ -481,21 +503,23 @@ export default function DealerPickupPage() {
 
             {/* Action Button (if pickup exists, allow reschedule) */}
             {car.pickupDetails && (
-              <div className="p-6 pt-0">
-                <button
-                  onClick={() => {
-                    setSelectedCar(car);
-                    setScheduleForm({
-                      date: '',
-                      time: '',
-                      assignedEmployee: '',
-                      employeeContact: '',
-                      employeeDesignation: '',
-                      notes: ''
-                    });
-                    setShowScheduleModal(true);
-                  }}
-                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2"
+              <div className="p-6 pt-0">                  <button
+                    onClick={() => {
+                      console.log('Reschedule button clicked for car:', car);
+                      setSelectedCar(car);
+                      console.log('Setting form to empty state');
+                      setScheduleForm({
+                        date: '',
+                        time: '',
+                        assignedEmployee: '',
+                        employeeContact: '',
+                        employeeDesignation: '',
+                        notes: ''
+                      });
+                      console.log('Opening schedule modal...');
+                      setShowScheduleModal(true);
+                    }}
+                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2"
                 >
                   <Calendar className="w-5 h-5" />
                   Reschedule Pickup
